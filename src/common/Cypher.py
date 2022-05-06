@@ -11,37 +11,34 @@ class Cypher:
 
 	## Run the caesar algorithm to encrypt or decrypt the text
 	# @param text string to encrypt or decrypt
-	# @param action integer that indicates: 1 for encrypt, 2 for decrypt
+	# @param action integer that indicates: (key) for encrypt, (-key) for decrypt
 	# @return string with the result text
 	def __run_algorithm(self, text, action):
-		''' action: 1 is for encrypt | 2 is for decrypt
+		''' action: (key) is for encrypt | -(key) is for decrypt
 		valid range using ascii-code: [0,125]'''
 		result = ""
 		for char in text:
-			if action == 1:
-				result += chr(ord(char) + 3 % 125) 
-			else:
-				result += chr(ord(char) - 3 % 125) 
+				result += chr((ord(char) + action) % 126) 
 		return result
 	
 	## Invokes the caesar algorithm to encrypt the text
 	# @param text string to encrypt
 	# return string with the encrypted text
 	def encrypt(self, text):
-		return self.__run_algorithm(text, 1)  # action is 1 (encrypt)
+		return self.__run_algorithm(text, self._key)  # action is (key) (encrypt)
 
 	## Invokes the caesar algorithm to decrypt the text
 	# @param text string to decrypt
 	# return string with the decrypted text
 	def decrypt(self, text):
-		return self.__run_algorithm(text, 2)  # action is 2 (decrypt)
+		return self.__run_algorithm(text, -(self._key))  # action is -(key) (decrypt)
 
 # end Cypher class
 
-
 # test code. To run: python Cypher.py
 def main():
-	# sample text:   "{\"texto\":\"ejEMplo\":\"pass\":\"BasIc91\":\"ñÁ\"}"
+	# sample text:   {“seq”:229,"type":"request","fin":true,"request":"read","index":"2",”operation”:"2+4+5+8+5+7",”result”:"31",”error”:false}
+
 	print(f"\n===start===")
 
 	cypher = Cypher()
