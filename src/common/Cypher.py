@@ -18,7 +18,7 @@ class Cypher:
 		valid range using ascii-code: [0,125]'''
 		result = ""
 		for char in text:
-				result += chr((ord(char) + action) % 126) 
+				result += chr((ord(char) + action) % 127) 
 		return result
 	
 	## Invokes the caesar algorithm to encrypt the text
