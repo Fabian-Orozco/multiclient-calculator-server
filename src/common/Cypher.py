@@ -7,7 +7,7 @@ class Cypher:
 	## Constructor
 	# initializes the attribute that represents the shift to each character
 	def __init__(self):
-		self._key = 3  # shift of each character
+		self.__key = 3  # shift of each character
 
 	## Run the caesar algorithm to encrypt or decrypt the text
 	# @param text string to encrypt or decrypt
@@ -25,13 +25,13 @@ class Cypher:
 	# @param text string to encrypt
 	# return string with the encrypted text
 	def encrypt(self, text):
-		return self.__run_algorithm(text, self._key)  # action is (key) (encrypt)
+		return self.__run_algorithm(text, self.__key)  # action is (key) (encrypt)
 
 	## Invokes the caesar algorithm to decrypt the text
 	# @param text string to decrypt
 	# return string with the decrypted text
 	def decrypt(self, text):
-		return self.__run_algorithm(text, -(self._key))  # action is -(key) (decrypt)
+		return self.__run_algorithm(text, -(self.__key))  # action is -(key) (decrypt)
 
 # end Cypher class
 
