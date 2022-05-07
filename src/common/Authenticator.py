@@ -12,27 +12,27 @@ class Authenticator:
 	# initializes the attribute that contains the data in json file
 	def __init__(self):
 		with open(route) as file:
-			self._usersJson = json.load(file)  # list of the data in json file
-		self._actualUser = None  # user that will be verified
+			self.__usersJson = json.load(file)  # list of the data in json file
+		self.__actualUser = None  # user that will be verified
 
 	## Compares the values given by parameter with the values of the json object
 	# @param username represents the key of the json object
 	# @param password represents the key of the json object
 	# return boolean True if the user is in the json object, otherwise returns False
 	def checkLog(self, username, password):
-		for user in self._usersJson['users']:
+		for user in self.__usersJson['users']:
 			if user["username"] == username and user["password"] == password:
-				self._actualUser = user
+				self.__actualUser = user
 				return True
 			else:
-				self._actualUser = None
+				self.__actualUser = None
 		return False
 	
 	## Check if a user has write permissions
 	# return boolean true if the user has write permissions, otherwise returns False
 	def userCanWrite(self):
 		try:
-			return self._actualUser["canWrite"]
+			return self.__actualUser["canWrite"]
 		except:
 			return False
 
