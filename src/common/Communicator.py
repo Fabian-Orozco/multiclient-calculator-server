@@ -19,10 +19,10 @@ class Communicator:
 		current_date_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
 		print(f'[{current_date_time}] {msg}')
 
-
 	## Method to send messages to another
 	# @param message receives message to send
 	# @param destination direction to where that message will be sent
+	# destination parameter is an tuple with the next format: (ipAddress, port)
 	def sendMessage(self, message, destination):
 		# we send message in utf-8 encoding
 		self.sock.sendto(message.encode('utf-8'), destination)
@@ -49,10 +49,10 @@ def main():
 	socketA.bind((ipAddress, port))
 	test = Communicator(socketA)
 	test.printmsg(f'Binded to {ipAddress}:{port}')
-	
-	message, address = test.receiveMessage()
-	print(f'received messages from {address}: {message}')
 
-if (__name__ == '__main__'): 
+	message, address = test.receiveMessage()
+	print(f'received messages from {address}:{message}')
+
+if (__name__ == '__main__'):
 	main()
 
