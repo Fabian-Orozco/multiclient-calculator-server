@@ -1,5 +1,4 @@
 # Daniel Escobar Giraldo C 02748
-
 import socket
 from datetime import datetime
 
