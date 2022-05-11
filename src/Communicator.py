@@ -7,16 +7,8 @@ class Communicator:
 
 	## Constructor
 	def __init__(self, socket):
-		self.sock = socket           # Socket
-		self.BUFFER = 128          # buffer of received messages in bytes
-
-	## Printing method to test class
-	# @param msg is the string to print
-	def printmsg(self, msg):
-		# Print message with current date and time
-		# testing function
-		current_date_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-		print(f'[{current_date_time}] {msg}')
+		self._sock = socket           # Socket
+		self.__BUFFER = 128          # buffer of received messages in bytes
 
 	## Method to send messages to another
 	# @param message receives message to send
@@ -24,18 +16,20 @@ class Communicator:
 	# destination parameter is an tuple with the next format: (ipAddress, port)
 	def sendMessage(self, message, destination):
 		# we send message in utf-8 encoding
-		self.sock.sendto(message.encode('utf-8'), destination)
+		self._sock.sendto(message.encode('utf-8'), destination)
 
 	## Method to recieve messages form anyone
 	# @return the received message, ipAddress and port of the client
 	def receiveMessage(self):
 		try:
 			# we receive a message with a 128 bytes buffer
-			data, client_address = self.sock.recvfrom(self.BUFFER)
+			data, client_address = self._sock.recvfrom(self.__BUFFER)
+			return data.decode('utf-8'), client_address
 		except:
 			self.printmsg('Error receiving message')
+		
+		return False
 
-		return data.decode('utf-8'), client_address
 
 
 ## testing 
