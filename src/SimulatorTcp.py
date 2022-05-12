@@ -5,7 +5,7 @@ from time import sleep
 import Communicator
 from datetime import datetime
 from colors import *
-
+from Cypher import Cypher
 
 class SimulatorTcp(Communicator.Communicator):
 	def __init__(self, socket, ipAddres, port):
@@ -15,6 +15,7 @@ class SimulatorTcp(Communicator.Communicator):
 		self.__resendTimeout = 2             # timeout of 2 seconds before resending message
 		self.__maxTries = 4                  # maximum of resends before disconnecting
 		self.__destination = (ipAddres,port) # tuple with destination address and port
+		self.__cypher = Cypher()             # to encrypt ad decrypt messages
 
 	## function waiting for some client to ask for connection
 	def listen(self, newPort):
@@ -27,6 +28,7 @@ class SimulatorTcp(Communicator.Communicator):
 		# example of connection request mesage
 		# {"type":"syn","seq":"0"}
 		message, senderAddress = self.receiveMessage()
+		message = self.__cypher.decrypt(message)
 		connectionRequest = json.loads(message)
 		if (connectionRequest['type'] != "syn"):
 			return False
@@ -45,6 +47,7 @@ class SimulatorTcp(Communicator.Communicator):
 			try:
 				# receive confirmation
 				confirmation, senderAddress = self.receiveMessage()
+				confirmation = self.__cypher.decrypt(confirmation)
 				break
 			except socket.timeout:
 				## testing
@@ -79,7 +82,7 @@ class SimulatorTcp(Communicator.Communicator):
 		# connecRequest = format.formatSyn(self.__seqValue)  
 		'''
 		connectRequest = "{\"type\":\"syn\",\"seq\":" + f"{self.__seqValue}" + "}"
-
+		connectRequest = self.__cypher.encrypt(connectRequest)
 		self._sock.settimeout(self.__resendTimeout)
 		sendTries = 0;
 		while(sendTries < self.__maxTries):
@@ -90,6 +93,7 @@ class SimulatorTcp(Communicator.Communicator):
 				# confirmation message format: {“type”:”ack”,“ack”:1,”seq”:10}
 				# waits for confirmation message
 				confirmation, senderAddress = self.receiveMessage()
+				confirmation = self.__cypher.decrypt(confirmation)
 				break
 			except socket.timeout:
 				## testing
@@ -107,15 +111,10 @@ class SimulatorTcp(Communicator.Communicator):
 		return False
 	
 	def __sendNewPort(self, newPort):
-		ackMesage = "{\"type\":\"ack\",\"ack\":"
-		ackMesage += f"{self.__ack}"
-		ackMesage += ",\"seq\":"
-		ackMesage += f"{self.__seqValue}"
-		ackMesage += ",\"port\":"
-		ackMesage += f"{newPort}"
-		ackMesage += "}"
+		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue},\"port\":" + f"{newPort}" + "}"
 
-		## testing 
+		## testing
+		ackMesage = self.__cypher.encrypt(ackMesage)
 		self.sendMessage(ackMesage, self.__destination)
 
 	def __accept(self):
@@ -128,6 +127,7 @@ class SimulatorTcp(Communicator.Communicator):
 				## now we wait for the message with the new port
 				# confirmation message format with new port: {“type”:”ack”,“ack”:”2”,”seq”:”11”,"port":4040}
 				confirmation, senderAddress = self.receiveMessage()
+				confirmation = self.__cypher.decrypt(confirmation)
 				break
 			except socket.timeout:
 				## testing
@@ -175,12 +175,14 @@ class SimulatorTcp(Communicator.Communicator):
 		# acceptRequest = format.formatAck(self.__seqValue, self.__ack)
 		'''
 		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue}" + "}" 
+		ackMesage = self.__cypher.encrypt(ackMesage)
 		self.sendMessage(ackMesage, self.__destination)
 
 	def sendTcpMessage(self, message):
 		self._sock.settimeout(self.__resendTimeout)
 
 		message = "{\"seq\":" + f"{self.__seqValue}," + message + "}"
+		message = self.__cypher.encrypt(message)
 		sendTries = 0;
 		while(sendTries < self.__maxTries):
 			self.sendMessage(message, self.__destination)
@@ -189,6 +191,7 @@ class SimulatorTcp(Communicator.Communicator):
 
 			try:
 				response, otherAddress = self.receiveMessage()
+				response = self.__cypher.decrypt(response)
 				self.__checkAck(response, otherAddress)
 				return response
 			except socket.timeout:
@@ -203,6 +206,8 @@ class SimulatorTcp(Communicator.Communicator):
 	def receiveTcpMessage(self):
 		# receive message
 		message, otherAddress = self.receiveMessage()
+		message = self.__cypher.decrypt(message)
+
 		# testing
 		self.printmsg(f"Received message {message} from {otherAddress}")
 		# load data to generate ack
@@ -228,15 +233,3 @@ class SimulatorTcp(Communicator.Communicator):
 
 	def setSocket(self, socket):
 		self._sock = socket
-
-
-
-def main():
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	tcp = SimulatorTcp(sock, '127.0.0.1', 8080)
-	tcp.sendTcpMessage("jola")
-if(__name__ == '__main__'):
-	main()
-
-
-
