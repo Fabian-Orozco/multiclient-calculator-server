@@ -4,8 +4,7 @@ import socket
 from time import sleep
 import Communicator
 from datetime import datetime
-from colors import *
-from Cypher import Cypher
+from Utilities import *
 
 class SimulatorTcp(Communicator.Communicator):
 	def __init__(self, socket, ipAddres, port):
@@ -15,11 +14,11 @@ class SimulatorTcp(Communicator.Communicator):
 		self.__resendTimeout = 2             # timeout of 2 seconds before resending message
 		self.__maxTries = 4                  # maximum of resends before disconnecting
 		self.__destination = (ipAddres,port) # tuple with destination address and port
-		self.__cypher = Cypher()             # to encrypt ad decrypt messages
 
 	## function waiting for some client to ask for connection
 	def listen(self, newPort):
-		# self.__seqValue = random.randint(1000,2000)
+		self._sock.settimeout(None)
+		#self.__seqValue = random.randint(1000,2000)
 		##testing
 		# we set seqValue to 
 		self.__seqValue = 10
@@ -27,13 +26,12 @@ class SimulatorTcp(Communicator.Communicator):
 		# wait for connection request message
 		# example of connection request mesage
 		# {"type":"syn","seq":"0"}
-		message, senderAddress = self.receiveMessage()
-		message = self.__cypher.decrypt(message)
+		message, senderAddress = self._receiveMessage()
+		printMsgTime(f"{TXT_YELLOW}Connecting to ip:{senderAddress[0]} | port:{senderAddress[1]}{TXT_RESET}")
+
 		connectionRequest = json.loads(message)
 		if (connectionRequest['type'] != "syn"):
 			return False
-
-		self.printmsg(f"Connecting to {senderAddress[0]}:{senderAddress[1]}")
 
 		# we send ack message
 		self.__ack = connectionRequest['seq']+1
@@ -46,29 +44,31 @@ class SimulatorTcp(Communicator.Communicator):
 
 			try:
 				# receive confirmation
-				confirmation, senderAddress = self.receiveMessage()
-				confirmation = self.__cypher.decrypt(confirmation)
+				confirmation, senderAddress = self._receiveMessage()
 				break
 			except socket.timeout:
 				## testing
-				self.printErrors("Resending request.")
+				printErrors("Resending request.")
 				sendTries += 1
 		if (sendTries == self.__maxTries):
-			self.printErrors("Could not establish connection.")
+			printErrors("Could not establish connection.")
 			return False
 
 		if (self.__checkAck(confirmation, senderAddress)):
+			confirmation = json.loads(confirmation)
+			# IMPORTANT register ack
+			self.__ack = confirmation['seq']+1
+
+			# IMPORTANT increment seqValue
+			self.__seqValue += 1
 			# send ack message with new port to connect
 			self.__sendNewPort(newPort)
-			self.printmsg(f"{TXT_GREEN}Connection established {TXT_RESET}")
+			printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]} {TXT_RESET}")
 			return True
-
-	def printErrors(self, message):
-		self.printmsg(f"{TXT_RED}ERROR: {TXT_RESET}{message}")
 
 	## function to ask for connection
 	def connect(self):
-		# self.__seqValue = random.randint(1000,2000)
+		#self.__seqValue = random.randint(1000,2000)
 		
 		##testing
 		# we set seqValue to 
@@ -81,31 +81,33 @@ class SimulatorTcp(Communicator.Communicator):
 		# format = MessageFormatter
 		# connecRequest = format.formatSyn(self.__seqValue)  
 		'''
-		connectRequest = "{\"type\":\"syn\",\"seq\":" + f"{self.__seqValue}" + "}"
-		connectRequest = self.__cypher.encrypt(connectRequest)
 		self._sock.settimeout(self.__resendTimeout)
+		connectRequest = "{\"type\":\"syn\",\"seq\":" + f"{self.__seqValue}" + "}"
 		sendTries = 0;
+		printMsgTime(f"{TXT_YELLOW}Connecting to ip:{self.__destination[0]} | port:{self.__destination[1]}{TXT_RESET}")
 		while(sendTries < self.__maxTries):
-			self.sendMessage(connectRequest, self.__destination)
-			self.printmsg(f"Connecting to {self.__destination[0]}:{self.__destination[1]}")
+			self._sendMessage(connectRequest, self.__destination)
 
 			try:
 				# confirmation message format: {“type”:”ack”,“ack”:1,”seq”:10}
 				# waits for confirmation message
-				confirmation, senderAddress = self.receiveMessage()
-				confirmation = self.__cypher.decrypt(confirmation)
+				confirmation, senderAddress = self._receiveMessage()
 				break
 			except socket.timeout:
 				## testing
-				self.printErrors("Resending request.")
+				printErrors("Resending request.")
 				sendTries += 1
 		if (sendTries == self.__maxTries):
-			self.printErrors("Could not establish connection.")
+			printErrors("Could not establish connection.")
 			return False
 
 		if (self.__checkAck(confirmation, senderAddress)):
+			confirmation = json.loads(confirmation)
+			# IMPORTANT register ack
+			self.__ack = confirmation['seq']+1
+
 			if (self.__accept()):
-				self.printmsg(f"{TXT_GREEN}Connection established {TXT_RESET}")
+				printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]}{TXT_RESET}")
 				return True
 
 		return False
@@ -114,11 +116,12 @@ class SimulatorTcp(Communicator.Communicator):
 		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue},\"port\":" + f"{newPort}" + "}"
 
 		## testing
-		ackMesage = self.__cypher.encrypt(ackMesage)
-		self.sendMessage(ackMesage, self.__destination)
+		self._sendMessage(ackMesage, self.__destination)
 
 	def __accept(self):
 		sendTries = 0;
+		# IMPORTANT increment seqValue
+		self.__seqValue += 1
 		while(sendTries < self.__maxTries):
 			## we send ack message
 			self.__sendAckMessage()
@@ -126,23 +129,25 @@ class SimulatorTcp(Communicator.Communicator):
 			try:
 				## now we wait for the message with the new port
 				# confirmation message format with new port: {“type”:”ack”,“ack”:”2”,”seq”:”11”,"port":4040}
-				confirmation, senderAddress = self.receiveMessage()
-				confirmation = self.__cypher.decrypt(confirmation)
+				confirmation, senderAddress = self._receiveMessage()
 				break
 			except socket.timeout:
 				## testing
-				self.printErrors("Resending request.")
+				printErrors("Resending request.")
 				sendTries += 1
 
 		if (sendTries == self.__maxTries):
-			self.printErrors("Could not establish connection.")
+			printErrors("Could not establish connection.")
 			return False
 
 		if (self.__checkAck(confirmation, senderAddress)):
-			message = json.loads(confirmation)
+			confirmation = json.loads(confirmation)
 			self.__destination = list(self.__destination)
-			self.__destination[1] = message['port']
+			self.__destination[1] = confirmation['port']
 			self.__destination = tuple(self.__destination)
+
+			# IMPORTANT register ack
+			self.__ack = confirmation['seq']+1
 			return True
 		return False
 
@@ -161,11 +166,6 @@ class SimulatorTcp(Communicator.Communicator):
 
 		# we confirm the ack value coming from ther server
 		if (confirmation['ack'] == self.__seqValue+1):
-			# IMPORTANT register ack
-			self.__ack = confirmation['seq']+1
-
-			# IMPORTANT register seqValue
-			self.__seqValue += 1
 			return True
 
 	def __sendAckMessage(self):
@@ -175,46 +175,43 @@ class SimulatorTcp(Communicator.Communicator):
 		# acceptRequest = format.formatAck(self.__seqValue, self.__ack)
 		'''
 		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue}" + "}" 
-		ackMesage = self.__cypher.encrypt(ackMesage)
-		self.sendMessage(ackMesage, self.__destination)
+		self._sendMessage(ackMesage, self.__destination)
 
 	def sendTcpMessage(self, message):
 		self._sock.settimeout(self.__resendTimeout)
 
+		self.__seqValue += 1
 		message = "{\"seq\":" + f"{self.__seqValue}," + message + "}"
-		message = self.__cypher.encrypt(message)
+
+		# IMPORTANT increment seqValue
+
 		sendTries = 0;
 		while(sendTries < self.__maxTries):
-			self.sendMessage(message, self.__destination)
-			## testing
-			self.printmsg(f"Message sent: {message} sent to {self.__destination}")
+			self._sendMessage(message, self.__destination)
 
 			try:
-				response, otherAddress = self.receiveMessage()
-				response = self.__cypher.decrypt(response)
-				self.__checkAck(response, otherAddress)
-				return response
+				response, otherAddress = self._receiveMessage()
+				if (response and self.__checkAck(response, otherAddress)):
+					response = json.loads(response)
+					# IMPORTANT register ack
+					self.__ack = response['seq']+1
+					return True
+				else:
+					return False
 			except socket.timeout:
-				self.printErrors("Resending request.")
+				printErrors("Resending request.")
 				sendTries += 1
 
 		if (sendTries == self.__maxTries):
-			self.printErrors("Closing connection.")
-			return "close"
-
+			printErrors("Closing connection.")
+			return False
 
 	def receiveTcpMessage(self):
 		# receive message
-		message, otherAddress = self.receiveMessage()
-		message = self.__cypher.decrypt(message)
+		message, otherAddress = self._receiveMessage()
 
-		# testing
-		self.printmsg(f"Received message {message} from {otherAddress}")
 		# load data to generate ack
 		information = json.loads(message)
-
-		# sets the destination address to where the ack message should be sent
-		self.__destination = otherAddress
 
 		# checks if there is a sequence number
 		if ('seq' in information):
@@ -223,13 +220,20 @@ class SimulatorTcp(Communicator.Communicator):
 			self.__seqValue += 1
 			self.__sendAckMessage()
 			return message
+		return "null"
 
-	## Printing method to test class
-	# @param msg is the string to print
-	def printmsg(self, msg):
-		# Imprime el día y la hora actuales + el mensaje enviado por parámetro
-		time = datetime.now().strftime('%x - %X')
-		print (f'{TXT_BLUE}[{time}]{TXT_RESET} {msg}')
+	def getSeqAck(self):
+		return (self.__seqValue, self.__ack)
+
+	def setSeqAck(self, values):
+		self.__seqValue = values[0]
+		self.__ack = values[1]
 
 	def setSocket(self, socket):
 		self._sock = socket
+
+	def getDestination(self):
+		return self.__destination
+	
+	def setDestination(self, newDestination):
+		self.__destination = newDestination
