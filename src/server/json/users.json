@@ -1,0 +1,24 @@
+{
+  "users": [
+    {
+      "username": "admin",
+      "password": "admin1234",
+      "canWrite": true
+    },
+    {
+      "username": "basic",
+      "password": "passbasic",
+      "canWrite": false
+    },
+    {
+      "username": "ext",
+      "password": "1909",
+      "canWrite": false
+    },
+    {
+      "username": "JGod",
+      "password": "pthreads",
+      "canWrite": true
+    }
+  ]
+}
