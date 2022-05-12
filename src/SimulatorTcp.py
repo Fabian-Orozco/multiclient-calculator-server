@@ -9,12 +9,12 @@ from colors import *
 
 class SimulatorTcp(Communicator.Communicator):
 	def __init__(self, socket, ipAddres, port):
-		super().__init__(socket)      # construtor form parent class
+		super().__init__(socket)             # construtor form parent class
 		self.__seqValue = 0                  # sequence value
 		self.__ack = 0                       # acknoledgement value
-		self.__messagePackage = None         # string to accumulate message
 		self.__resendTimeout = 2             # timeout of 2 seconds before resending message
-		self.__destination = (ipAddres,port) # tuple with destination addres and port
+		self.__maxTries = 4                  # maximum of resends before disconnecting
+		self.__destination = (ipAddres,port) # tuple with destination address and port
 
 	## function waiting for some client to ask for connection
 	def listen(self, newPort):
@@ -31,19 +31,37 @@ class SimulatorTcp(Communicator.Communicator):
 		if (connectionRequest['type'] != "syn"):
 			return False
 
-		self.printmsg(f"Connection request received from {senderAddress}")
+		self.printmsg(f"Connecting to {senderAddress[0]}:{senderAddress[1]}")
 
 		# we send ack message
 		self.__ack = connectionRequest['seq']+1
 		self.__destination = senderAddress
-		self.__sendAckMessage()
 
-		# receive confirmation
-		confirmation, senderAddress = self.receiveMessage()
+		self._sock.settimeout(self.__resendTimeout)
+		sendTries = 0;
+		while(sendTries < self.__maxTries):
+			self.__sendAckMessage()
+
+			try:
+				# receive confirmation
+				confirmation, senderAddress = self.receiveMessage()
+				break
+			except socket.timeout:
+				## testing
+				self.printErrors("Resending request.")
+				sendTries += 1
+		if (sendTries == self.__maxTries):
+			self.printErrors("Could not establish connection.")
+			return False
+
 		if (self.__checkAck(confirmation, senderAddress)):
 			# send ack message with new port to connect
 			self.__sendNewPort(newPort)
+			self.printmsg(f"{TXT_GREEN}Connection established {TXT_RESET}")
 			return True
+
+	def printErrors(self, message):
+		self.printmsg(f"{TXT_RED}ERROR: {TXT_RESET}{message}")
 
 	## function to ask for connection
 	def connect(self):
@@ -60,21 +78,31 @@ class SimulatorTcp(Communicator.Communicator):
 		# format = MessageFormatter
 		# connecRequest = format.formatSyn(self.__seqValue)  
 		'''
-		connectRequest = "{\"type\":\"syn\",\"seq\":"
-		connectRequest += f"{self.__seqValue}"
-		connectRequest += "}"
+		connectRequest = "{\"type\":\"syn\",\"seq\":" + f"{self.__seqValue}" + "}"
 
-		## testing
-		self.printmsg(f"Connection request sent message {connectRequest} to {self.__destination}")
-		self.sendMessage(connectRequest, self.__destination)
+		self._sock.settimeout(self.__resendTimeout)
+		sendTries = 0;
+		while(sendTries < self.__maxTries):
+			self.sendMessage(connectRequest, self.__destination)
+			self.printmsg(f"Connecting to {self.__destination[0]}:{self.__destination[1]}")
 
-		# confirmation message format: {“type”:”ack”,“ack”:1,”seq”:10}
-		# we wait for confirmation
-		confirmation, senderAddress = self.receiveMessage()
+			try:
+				# confirmation message format: {“type”:”ack”,“ack”:1,”seq”:10}
+				# waits for confirmation message
+				confirmation, senderAddress = self.receiveMessage()
+				break
+			except socket.timeout:
+				## testing
+				self.printErrors("Resending request.")
+				sendTries += 1
+		if (sendTries == self.__maxTries):
+			self.printErrors("Could not establish connection.")
+			return False
+
 		if (self.__checkAck(confirmation, senderAddress)):
-			self.__accept()
-			self.printmsg(f"Connected to new port {self.__destination}")
-			return True
+			if (self.__accept()):
+				self.printmsg(f"{TXT_GREEN}Connection established {TXT_RESET}")
+				return True
 
 		return False
 	
@@ -91,20 +119,32 @@ class SimulatorTcp(Communicator.Communicator):
 		self.sendMessage(ackMesage, self.__destination)
 
 	def __accept(self):
-		## we sen ack message
-		self.__sendAckMessage()
+		sendTries = 0;
+		while(sendTries < self.__maxTries):
+			## we send ack message
+			self.__sendAckMessage()
 
-		## now we wait for the message with the new port
-		# confirmation message format with new port: {“type”:”ack”,“ack”:”2”,”seq”:”11”,"port":4040}
-		confirmation, senderAddress = self.receiveMessage()
+			try:
+				## now we wait for the message with the new port
+				# confirmation message format with new port: {“type”:”ack”,“ack”:”2”,”seq”:”11”,"port":4040}
+				confirmation, senderAddress = self.receiveMessage()
+				break
+			except socket.timeout:
+				## testing
+				self.printErrors("Resending request.")
+				sendTries += 1
+
+		if (sendTries == self.__maxTries):
+			self.printErrors("Could not establish connection.")
+			return False
+
 		if (self.__checkAck(confirmation, senderAddress)):
 			message = json.loads(confirmation)
 			self.__destination = list(self.__destination)
 			self.__destination[1] = message['port']
 			self.__destination = tuple(self.__destination)
-
-			## testing
-			self.printmsg(f"Connection accepted, moved to port: {self.__destination}")
+			return True
+		return False
 
 	## function to check the received ack
 	# @param confirmation is the messaged received
@@ -134,29 +174,31 @@ class SimulatorTcp(Communicator.Communicator):
 		# format = MessageFormatter
 		# acceptRequest = format.formatAck(self.__seqValue, self.__ack)
 		'''
-		ackMesage = "{\"type\":\"ack\",\"ack\":"
-		ackMesage += f"{self.__ack}"
-		ackMesage += ",\"seq\":"
-		ackMesage += f"{self.__seqValue}"
-		ackMesage += "}" 
-
+		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue}" + "}" 
 		self.sendMessage(ackMesage, self.__destination)
 
 	def sendTcpMessage(self, message):
 		self._sock.settimeout(self.__resendTimeout)
 
 		message = "{\"seq\":" + f"{self.__seqValue}," + message + "}"
-		## testing
-		self.sendMessage(message, self.__destination)
-		self.printmsg(f"Message generated: {message} sent to {self.__destination}")
+		sendTries = 0;
+		while(sendTries < self.__maxTries):
+			self.sendMessage(message, self.__destination)
+			## testing
+			self.printmsg(f"Message sent: {message} sent to {self.__destination}")
 
-		try:
-			response, otherAddress = self.receiveMessage()
-			self.__checkAck(response, otherAddress)
+			try:
+				response, otherAddress = self.receiveMessage()
+				self.__checkAck(response, otherAddress)
+				return response
+			except socket.timeout:
+				self.printErrors("Resending request.")
+				sendTries += 1
 
-			return response
-		except socket.timeout:
-			self.printmsg(f"No confirmation from server received, sendig again")
+		if (sendTries == self.__maxTries):
+			self.printErrors("Closing connection.")
+			return "close"
+
 
 	def receiveTcpMessage(self):
 		# receive message
