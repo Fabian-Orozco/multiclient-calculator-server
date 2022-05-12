@@ -10,9 +10,8 @@ TXT_GREEN = '\033[32m'
 
 #######################################################################
 
-## Printing method to test class
+## Prints the current day and time + the message sent by parameter
 # @param msg is the string to print
 def printMsgTime(msg):
-    # Imprime el día y la hora actuales + el mensaje enviado por parámetro
     time = datetime.now().strftime('%x - %X')
     print (f'{TXT_BLUE}[{time}]{TXT_RESET} {msg}')
