@@ -8,9 +8,10 @@ if(__name__ == '__main__'):
     port = 8080
     addresInfo = [ip, port]
     communication = SimulatorTcp(serverSocket, ip, port)
-    communication.connect()
-    message = "\"type\":\"login\""
-    communication.sendTcpMessage(message)
-    message = communication.receiveTcpMessage()
-
-
+    if (communication.connect()):
+        message = "\"type\":\"login\""
+        communication.sendTcpMessage(message)
+        if (message == "close"):
+            print("close server")
+            serverSocket.close()
+        message = communication.receiveTcpMessage()
