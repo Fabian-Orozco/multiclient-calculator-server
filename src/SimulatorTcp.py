@@ -2,6 +2,7 @@ import json
 import random
 import socket
 from time import sleep
+from typing_extensions import Self
 import Communicator
 from datetime import datetime
 from Utilities import *
@@ -18,10 +19,10 @@ class SimulatorTcp(Communicator.Communicator):
 	## function waiting for some client to ask for connection
 	def listen(self, newPort):
 		self._sock.settimeout(None)
-		#self.__seqValue = random.randint(1000,2000)
+		self.__seqValue = random.randint(1000,2000)
 		##testing
 		# we set seqValue to 
-		self.__seqValue = 10
+		#self.__seqValue = 10
 
 		# wait for connection request message
 		# example of connection request mesage
@@ -68,11 +69,11 @@ class SimulatorTcp(Communicator.Communicator):
 
 	## function to ask for connection
 	def connect(self):
-		#self.__seqValue = random.randint(1000,2000)
+		self.__seqValue = random.randint(1000,2000)
 		
 		##testing
 		# we set seqValue to 
-		self.__seqValue = 0
+		#self.__seqValue = 0
 
 		## Example of connection request mesage
 		# {"type":"syn","seq":"0"}
@@ -237,3 +238,6 @@ class SimulatorTcp(Communicator.Communicator):
 	
 	def setDestination(self, newDestination):
 		self.__destination = newDestination
+
+	def close(self):
+		self._sock.close()

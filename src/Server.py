@@ -1,12 +1,14 @@
-from cgi import test
-from time import sleep
-from Communicator import Communicator
+from email import message
+from sre_constants import OP_LOCALE_IGNORE
+from pkg_resources import ResolutionError
+from urllib3 import Retry
 from SimulatorTcp import SimulatorTcp
 import socket
 import threading
 import os
 from Utilities import *
-
+from Authenticator import Authenticator
+import json
 
 class Server:
 	def __init__(self, host, port):
@@ -16,7 +18,7 @@ class Server:
 		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		self.__welcomingSocket.bind((self.__host, self.__port))
 		self.tcpCommunication = SimulatorTcp(self.__welcomingSocket, self.__host, self.__port)
-
+		self.__authenticator = Authenticator()
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|====Shutting down server====|{TXT_RESET}')
@@ -32,7 +34,7 @@ class Server:
 					newPort += 1
 					if (self.tcpCommunication.listen(newPort)):
 						# creates thread to manage the connection
-						thread = threading.Thread(target = self.handle_request,
+						thread = threading.Thread(target = self.handleConnection,
 							args = (newPort, self.tcpCommunication.getSeqAck(), \
 							self.tcpCommunication.getDestination()))
 						thread.daemon = True
@@ -42,16 +44,32 @@ class Server:
 		finally:
 			self.shutDownServer()
 
-	def handle_request(self, port, values, destination):
+	def handleConnection(self, port, values, destination):
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((self.__host, port))
 		communicator = SimulatorTcp(sock, destination[0], destination[1])
 		# setting values to continue communication
 		communicator.setSeqAck(values)
-		clientMessage = communicator.receiveTcpMessage()
-		clientMessage = communicator.receiveTcpMessage()
+
+		if(self.clientLogin(communicator) == False):
+			communicator.close()
+			return
+
+	def clientLogin(self, communicator):
+		canWrite = False
+		userAccepted = False
+		message = communicator.receiveTcpMessage()
+		loginInfo = json.loads(message)
+		userAccepted = self.__authenticator.checkLog(loginInfo['username'], loginInfo['password'])
+		if (userAccepted):
+			canWrite = self.__authenticator.userCanWrite()
 
 
+
+		if (userAccepted and canWrite):
+			return True
+		else:
+			return False
 
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|====Server started====|{TXT_RESET}")
@@ -62,15 +80,3 @@ class Server:
 if(__name__ == '__main__'):
 	server = Server('127.0.0.2', 8080)
 	server.run()
-	'''
-	# tecp testing
-	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	sock.bind(('127.0.0.1', 8080))
-	test = SimulatorTcp(sock,'127.0.0.1',8080)
-	test.listen(8080)
-	message = "\"type\":\"Hola como esta\""
-	test.receiveTcpMessage()
-	message = "\"type\":\"lohout\""
-	test.sendTcpMessage(message)
-'''
-
