@@ -1,5 +1,31 @@
 from SimulatorTcp import SimulatorTcp
 import socket
+import threading
+import os
+
+class Server:
+	def __init__(self, host, port):
+		self.__sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.__host = host            # server port
+		self.__port = port            # server ip
+		self.__maxTimeOut = 300       # max timout of client inactivity in seconds
+
+
+
+	def shutDownServer():
+		self.printmsg('Shutting down server')
+		# shutdown the server so we close the socket
+		self.sock.close()
+
+	def waitrForClient(self):
+	# waits for client connection
+	try:
+
+
+
+	finally:
+
+
 
 if(__name__ == '__main__'):
     serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
