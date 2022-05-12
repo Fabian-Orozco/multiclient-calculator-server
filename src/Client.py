@@ -39,7 +39,8 @@ class Client:
 
 		self.__analizeArgs()  # if arguments are invalid invokes to close.
 		# chequea que sea un usuario registrado
-		self.login()  # invoca a tcp
+		if(self.login() == False): # invoca a tcp
+			self.close() 
 		
 		# enter 'q' to exit
 		while True:

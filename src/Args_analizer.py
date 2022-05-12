@@ -61,19 +61,19 @@ ____________________________________________________''')
 
 	## Receives a string and looks for it in the array of arguments
 	# @return the content if found, otherwise returns -1.
-	def findArg(self, arg):
+	def __findArg(self, arg):
 		return self.__arguments.index(arg) if arg in self.__arguments else -1
 
 ####################################################################################
 
 	## Checks the number of arguments and invokes the search for -u and -p
 	# @return True if the number of arguments is acceptable, False otherwise.
-	def loadIndexes(self):
+	def __loadIndexes(self):
 		if (self.__qtyArgs < 4): #  fewer arguments than required
 			return False
 		else: # find the index of -u and -p
-			self.__indexU = self.findArg('-u') # not guaranteed to find it
-			self.__indexP = self.findArg('-p') # not guaranteed to find it
+			self.__indexU = self.__findArg('-u') # not guaranteed to find it
+			self.__indexP = self.__findArg('-p') # not guaranteed to find it
 		return True
 
 ####################################################################################
@@ -82,7 +82,7 @@ ____________________________________________________''')
 	# @param arg name of the key: username or password.
 	# @param index that represents the position of '-u' or '-p' in the list.
 	# @return If it is valid, it returns the string; otherwise it returns false.
-	def findValue(self, arg, index):
+	def __findValue(self, arg, index):
 		# assume: indexP + 1 or indexU + 1
 		# we assume that the data is one position to the right
 		temp = index + 1
@@ -102,9 +102,9 @@ ____________________________________________________''')
 	# @return True if the username and password string are acceptable, False in othercase.
 	def __validateArgs(self):
 		result = False # assume
-		if (self.loadIndexes()): # -u -p
-			self.__user = self.findValue("user", self.__indexU)  # find the string that represents user
-			self.__password = self.findValue("pass", self.__indexP)  # find the string that represents pass
+		if (self.__loadIndexes()): # -u -p
+			self.__user = self.__findValue("user", self.__indexU)  # find the string that represents user
+			self.__password = self.__findValue("pass", self.__indexP)  # find the string that represents pass
 		if (self.__user) and (self.__password): # both are valid (are strings and not flags)
 			result = True
 		return result
