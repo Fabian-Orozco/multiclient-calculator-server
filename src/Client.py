@@ -1,15 +1,13 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
-from colors import *
+from Utilities import *
 from Args_analizer import Args_analizer
+# from SimulatorTcp import SimulatorTcp
+# from DataValidator import DataValidator
 
-from datetime import datetime
-
-# import SimulatorTcp
 
 ## class Client
 # class in charge of handling the interaction with the user
-
 class Client:
 
 	## Constructor
@@ -37,7 +35,7 @@ class Client:
 	
 	## method that handles the flow of client interaction: 
 	def run(self):
-		self.print_msg_time(f"{TXT_GREEN}|======: START :======|{TXT_RESET}")
+		printMsgTime(f"{TXT_GREEN}|======: START :======|{TXT_RESET}")
 
 		self.__analizeArgs()  # if arguments are invalid invokes to close.
 		# chequea que sea un usuario registrado
@@ -47,45 +45,57 @@ class Client:
 		while True:
 			input = self.showInterface()
 			if input == 'q' : self.close()
+			if input == '-h' : self.__argsAnalizer.printHelp()
 		
 
 ####################################################################################
 
+	## prints the base message to the user
+	# @return the value entered by the user
 	def showInterface(self):
-		return input(f"{TXT_BLUE}>{TXT_RESET} Enter the action to perform: ")
+		try:
+			return input(f"{TXT_BLUE}>{TXT_RESET} Enter the action to perform: ")
+		except KeyboardInterrupt as err:  # SIGINT (ctrl+c)
+			print(f' \n{TXT_RED}Program finished by signal SIGINT{TXT_RESET}')
+
+		except EOFError as err:  # EOF (ctrl+d)
+			print(f' \n{TXT_RED}Program finished by signal EOF{TXT_RESET}')
+		return 'q'
+		
 
 ####################################################################################
 
+	##
+	#
 	def validateData(self):
-		## El atributo de tipo DataValidator se encarga de esto
+		## El atributo de tipo DataValidator se encarga de esto ......Agregar.......
 		print("")
 
 ####################################################################################
 
+	##
+	#
 	def login(self):
-		# Invokes messageFormatter to format the string (user+password)
-		# Invokes Simulator_Tcp to send a message
+		# Invokes messageFormatter to format the string (user+password) ..Agregar..
+		# Invokes Simulator_Tcp to send a message ........Agregar.........
 		print("")
 
 ####################################################################################
 
+	##
+	#
 	def receiveMessage(self):
-		# Invoca a tcp para recibir un mensaje
+		# Invokes Simulator_Tcp to receive a message ........Agregar.........
 		print("")
 
 ####################################################################################
 
 	def close(self):
-		# Invoca a tcp para cerrar la conexión
-		self.print_msg_time(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
+		# Invokes Simulator_Tcp to close the connection ........Agregar.........
+		printMsgTime(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
 		exit(0)
 
 ####################################################################################
-
-	def print_msg_time(self, msg):
-		''' Prints the current day and time + the message sent by parameter '''
-		current_time = datetime.now().strftime('%x - %X')
-		print (f'\n{TXT_BLUE}[{current_time}]{TXT_RESET} {msg}\n')
 
 # end Client class
 ####################################################################################
