@@ -17,7 +17,6 @@ if(__name__ == '__main__'):
         newAddresInfo = (newIp, newport)
         newSocket.bind((newIp, newport))
         communication.setSocket(newSocket)
-        communication.printmsg(f"Binded socket to {newAddresInfo}")
         message = communication.receiveTcpMessage()
         communication.sendTcpMessage("\"type\":\"Hola como esta\"")
 
