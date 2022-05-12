@@ -21,16 +21,9 @@ class Communicator:
 	## Method to recieve messages form anyone
 	# @return the received message, ipAddress and port of the client
 	def receiveMessage(self):
-		try:
-			# we receive a message with a 128 bytes buffer
-			data, client_address = self._sock.recvfrom(self.__BUFFER)
-			return data.decode('utf-8'), client_address
-		except:
-			self.printmsg('Error receiving message')
-		
-		return False
-
-
+		# we receive a message with a 128 bytes buffer
+		data, client_address = self._sock.recvfrom(self.__BUFFER)
+		return data.decode('utf-8'), client_address
 
 ## testing 
 # need to remove later
