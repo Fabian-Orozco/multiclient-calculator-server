@@ -3,8 +3,9 @@
 ## class Args_analizer
 # class in charge of validating the arguments
 
+from colors import *
+
 import sys
-from xmlrpc.client import TRANSPORT_ERROR
 
 class Args_analizer:
 	# Constructor
@@ -20,13 +21,15 @@ class Args_analizer:
 	## Print argument help: required arguments and their meaning.
 	def printUsage(self):
 		print(f'''\
-usage: {sys.argv[0]} -u username -p password
+____________________________________________________
+usage: {TXT_BLUE}{sys.argv[0]} -u username -p password{TXT_RESET}
 
 required arguments:
-  -u              flag before username
-  "username"      username that will enter the server
-  -p              flag before password 
-  "password"      user password''')
+  {TXT_BLUE}-u{TXT_RESET}            flag before username
+  {TXT_BLUE}username{TXT_RESET}      username that will enter the server
+  {TXT_BLUE}-p{TXT_RESET}      	flag before password 
+  {TXT_BLUE}password{TXT_RESET}      user password{TXT_RESET}
+____________________________________________________''')
 	
 ####################################################################################
 
@@ -46,7 +49,6 @@ required arguments:
 
 	def loadIndexes(self):
 		if (self.__qtyArgs < 4): #  fewer arguments than required
-			print("ERROR: number invalid of arguments (must be at least 4)")
 			return False
 		else: # find the index of -u and -p
 			self.__indexU = self.findArg('-u') # not guaranteed to find it
@@ -67,7 +69,7 @@ required arguments:
 			and (self.__arguments[temp] not in self.__validArguments):
 			return self.__arguments[temp]
 		else:
-			print(f"ERROR: {arg} not found")
+			print(f"{TXT_RED}ERROR: {TXT_BLUE}{arg}{TXT_RESET} not found")
 		return False
 
 ####################################################################################
@@ -98,17 +100,17 @@ required arguments:
 ####################################################################################
 
 def main():
-	print("\nStart...\n=================\n")
+	print(f"\n{TXT_GREEN}Start...\n================={TXT_RESET}\n")
 
-	reader = Args_analizer()
+	args_analizer = Args_analizer()
 
-	if (reader.analizeArgs() == True):
-		print(reader.getData())
+	if (args_analizer.analizeArgs() == True):
+		print(args_analizer.getData())
 		print("Arguments format are valid...")
 	else:
-		reader.printUsage()
+		args_analizer.printUsage()
 		print("\nTry again later... close")
-		print("\n=================\nFinish")
+		print(f"\n{TXT_GREEN}=================\nFinish{TXT_RESET}")
 
 if __name__ == "__main__":
   	main()
