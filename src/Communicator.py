@@ -24,21 +24,3 @@ class Communicator:
 		# we receive a message with a 128 bytes buffer
 		data, client_address = self._sock.recvfrom(self.__BUFFER)
 		return data.decode('utf-8'), client_address
-
-## testing 
-# need to remove later
-def main():
-	print('Hello world')
-	ipAddress = '127.0.0.1'
-	port = 8080
-	socketA = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	socketA.bind((ipAddress, port))
-	test = Communicator(socketA)
-	test.printmsg(f'Binded to {ipAddress}:{port}')
-
-	message, address = test.receiveMessage()
-	print(f'received messages from {address}:{message}')
-
-if (__name__ == '__main__'):
-	main()
-
