@@ -64,10 +64,8 @@ class MessageFormatter:
     # @param validated STRING Optional is "true" if the user is in the database, "false" in otherwise
     # @param canWrite STRING Optional is "true" if the user can write, "false" in otherwise
     # @return string result with json format
-    def formatLogin(self, seq, username, password, validated = None, canWrite = None):
-        format = "{"
-        format += self.jsonFormat("seq",        seq,                        ",")
-        format += self.jsonFormat("type",       self.__sQts("login"),       ",")
+    def formatLogin(self, username, password, validated = None, canWrite = None):
+        format = self.jsonFormat("type",       self.__sQts("login"),       ",")
         format += self.jsonFormat("fin",        "true",                     ",")
         format += self.jsonFormat("username",   self.__sQts(username),      ",")
         
@@ -92,10 +90,8 @@ class MessageFormatter:
     # FROM SERVER:
     # @param Optional result represents the mathematical result of the operation [from server]
     # @return string result with json format
-    def formatRequestWrite(self, seq, fin, operation, result = None):
-        format = "{"
-        format += self.jsonFormat("seq", seq, ",")
-        format += self.jsonFormat("type", self.__sQts("request"), ",")
+    def formatRequestWrite(self, fin, operation, result = None):
+        format = self.jsonFormat("type", self.__sQts("request"), ",")
         format += self.jsonFormat("fin", fin, ",")
         format += self.jsonFormat("request", self.__sQts("write"), ",")
 
@@ -118,10 +114,8 @@ class MessageFormatter:
     # @param error STRING Optional error  is true only if the index of the requested operation is out of range in the database[from server]
     # @param Optional result represents the mathematical result of the operation [from server]
     # @return string result with json format
-    def formatRequestRead(self, seq, fin, index, error = None, result = None):
-        format = "{"
-        format += self.jsonFormat("seq", seq, ",")
-        format += self.jsonFormat("type", self.__sQts("request"), ",")
+    def formatRequestRead(self, fin, index, error = None, result = None):
+        format = self.jsonFormat("type", self.__sQts("request"), ",")
         format += self.jsonFormat("fin", fin, ",")
         format += self.jsonFormat("request", self.__sQts("read"), ",")
 
@@ -140,10 +134,8 @@ class MessageFormatter:
     # Example: {"seq":8,"type":"disconnect"} 
     # @param seq tcp message sequence number
     # @return string result with json format
-    def formatDisconnect(self, seq):
-        format = "{"
-        format += self.jsonFormat("seq", seq, ",")
-        format += self.jsonFormat("type", self.__sQts("disconnect"))
+    def formatDisconnect(self):
+        format = self.jsonFormat("type", self.__sQts("disconnect"))
         format += "}"
 
         return format
@@ -153,10 +145,8 @@ class MessageFormatter:
     # @param seq tcp message sequence number
     # @param message error description 
     # @return string result with json format
-    def formatError(self, seq, message):
-        format = "{"
-        format += self.jsonFormat("seq", seq, ",")
-        format += self.jsonFormat("type", self.__sQts("error"), ",")
+    def formatError(self, message):
+        format = self.jsonFormat("type", self.__sQts("error"), ",")
         format += self.jsonFormat("message", self.__sQts(message))
         format += "}"
 
@@ -166,7 +156,7 @@ class MessageFormatter:
 
 # test code. To run: python MessageFormatter.py
 def main():
-
+    '''
     msg_f = MessageFormatter()
     print("\n")
     print("SYN:\n" + msg_f.formatSyn(1) + "\n")
@@ -183,7 +173,7 @@ def main():
     print("Resp-Read \n" + msg_f.formatRequestRead(1,"true",2,"false",3) + "\n")
     print("Disconnect \n" + msg_f.formatDisconnect(1) + "\n")
     print("Error \n" + msg_f.formatError(1, "mensaje de error") + "\n")
-
+    '''
 if __name__ == "__main__":
   	main()
 
