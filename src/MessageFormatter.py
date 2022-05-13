@@ -97,7 +97,7 @@ class MessageFormatter:
 
         if (result != None):
             format += self.jsonFormat("result", result, ",")
-        format += self.jsonFormat("operation", operation)
+        format += self.jsonFormat("operation", self.__sQts(operation))
         format += "}"
 
         return format
