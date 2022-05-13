@@ -1,7 +1,3 @@
-from email import message
-from sre_constants import OP_LOCALE_IGNORE
-from pkg_resources import ResolutionError
-from urllib3 import Retry
 from SimulatorTcp import SimulatorTcp
 import socket
 import threading
@@ -9,6 +5,7 @@ import os
 from Utilities import *
 from Authenticator import Authenticator
 import json
+from MessageFormatter import MessageFormatter
 
 class Server:
 	def __init__(self, host, port):
@@ -19,6 +16,7 @@ class Server:
 		self.__welcomingSocket.bind((self.__host, self.__port))
 		self.tcpCommunication = SimulatorTcp(self.__welcomingSocket, self.__host, self.__port)
 		self.__authenticator = Authenticator()
+		self.__formatter = MessageFormatter()
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|====Shutting down server====|{TXT_RESET}')
@@ -55,6 +53,7 @@ class Server:
 			communicator.close()
 			return
 
+
 	def clientLogin(self, communicator):
 		canWrite = False
 		userAccepted = False
@@ -64,11 +63,15 @@ class Server:
 		if (userAccepted):
 			canWrite = self.__authenticator.userCanWrite()
 
+		message = self.__formatter.formatLogin(loginInfo['username'], loginInfo['password'],  str(userAccepted).lower(), str(canWrite).lower())
 
-
-		if (userAccepted and canWrite):
+		communicator.sendTcpMessage(message)
+		if (userAccepted):
+			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_GREEN}accepted{TXT_RESET}")
 			return True
 		else:
+			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_RED}not accepted{TXT_RESET}")
+			
 			return False
 
 	def run(self):
