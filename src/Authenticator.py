@@ -2,7 +2,7 @@
 
 import json
 
-route = "../server/json/users.json"
+route = "./json/users.json"
 
 ## class Authenticator
 # class in charge of validating the entered username and password; in addition to verifying the permissions that it has, comparing through the file of valid users.
