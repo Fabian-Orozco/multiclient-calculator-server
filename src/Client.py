@@ -32,31 +32,57 @@ class Client:
 			self.__username , self.__password = self.__argsAnalizer.getData()
 			print(f"The format of the arguments {TXT_GREEN}is valid{TXT_RESET}")
 		else:
-			print(f"The format of the arguments {TXT_RED}is invalid{TXT_RESET}")
 			self.__argsAnalizer.printUsage()
-			self.__close()
+			self.__close(f"The format of the arguments {TXT_RED}is invalid{TXT_RESET}")
 			
 ####################################################################################
 	
 	## method that handles the flow of client interaction: 
 	def run(self):
-		printMsgTime(f"{TXT_GREEN}|======: START :======|{TXT_RESET}")
+		printMsgTime(f"{TXT_GREEN}|======: START :======|{TXT_RESET}")  # header
 
 		self.__analizeArgs()  # if arguments are invalid invokes to __close.
-		# chequea que sea un usuario registrado
 
-		self.__connect()  # invoca a tcp. Si no es válido, cierra el programa
-		self.login()  # invoca a tcp. Si no es válido, cierra el programa
-
-		# enter 'q' to exit
+		# handshake and login
+		self.__connect()  # Invokes to tcp. If invalid, close program
+		self.login()  # Invokes to  tcp. If invalid, close program
+		
 		while True:
 			input = self.showInterface()
-			if input == 'q' : self.__close()
-			if input == '-h' : self.__argsAnalizer.printHelp()
-			# self.__validateData(input)
-			formatedMessage = self.__generateAction(input)
-			# self.__msgFormatter.
-			# self.__sendMessage(input)
+			
+			if (input == 'q') : 
+				break;
+			
+			elif (input == '-h') : 
+				self.__argsAnalizer.printHelp()
+			else:
+				# self.__validateData(input)
+				formatedMessage = self.__generateAction(input)
+				if (formatedMessage != None): 
+					print("testing_Mensaje formado para enviar:\n" + formatedMessage + "\n")
+					# self.__sendMessage(formatedMessage)
+					# serverResponse = self.__receiveMessage(formatedMessage)
+					# self.__verifyServerResponse()
+				else:
+					printErrors(f"Invalid input. Try again...")
+
+		self.__close(f"Program {TXT_BLUE}finished{TXT_RESET} with 'q'")  # enter 'q' to exit
+####################################################################################
+
+	## 
+	# 
+	def __verifyServerResponse(self, serverResponse):
+		# posibles llegadas: write/read with result , error [etapa 3], 
+		# {"seq”:228,"type":"request","fin":true,"request":"write","result":31,"operation":"2+4+5+8+5+7"}   6
+		# error solo si el indice está fuera del rango
+		# {"seq”:229,"type":"request","fin":true,"request":"read","index":"2",”error”:false,”result”:31,”operation”:"1+1+1+1+1+1+1+1+1+1"}
+
+		json_response = json.loads(serverResponse)
+		request = json_response["request"]
+		if (request == "read"):
+			print("")
+		elif(request == "write"):
+			print("")
 		
 
 ####################################################################################
@@ -67,22 +93,11 @@ class Client:
 		try:
 			return input(f"{TXT_BLUE}>{TXT_RESET} Enter the action to perform: ")
 		except KeyboardInterrupt as err:  # SIGINT (ctrl+c)
-			print(f' \n{TXT_RED}Program finished by signal SIGINT{TXT_RESET}')
+			self.__close(f'Program finished by {TXT_RED}signal SIGINT{TXT_RESET}')
 
 		except EOFError as err:  # EOF (ctrl+d)
-			print(f' \n{TXT_RED}Program finished by signal EOF{TXT_RESET}')
+			self.__close(f'Program finished by {TXT_RED}signal EOF{TXT_RESET}')
 		return 'q'
-####################################################################################
-
-	## prints the base message to the user
-	# @return the value entered by the user
-	def __checkInput(self, userInput):
-		if ("-r" in userInput):
-			return "read"
-		elif ("-w" in userInput):
-			return "write"
-		else:
-			return False
 
 ####################################################################################
 
@@ -96,24 +111,23 @@ class Client:
 	##
 	#
 	def __generateAction(self, userInput):
-		action = self.__checkInput(userInput)
-		userInput = userInput.strip()
-		if (action == "read"):
+		userInput = userInput.strip()  	#remove blank space around
+		content = (userInput[userInput.find(" "):]).strip() # action [content]
+
+		if (userInput == "-r"):  # read [] => all
+				# Tcp se encarga de dividir. Se asumen "fin" como true
+				return self.__msgFormatter.formatRequestRead("true", -1) 	# -r
+		
+		elif ("-r" in userInput):  		# read action
+			if (" " in userInput):		# read + index
+				# Tcp se encarga de dividir. Se asumen "fin" como true
+				return self.__msgFormatter.formatRequestRead("true", int(content))
+
+		elif("-w" in userInput):
 			if (" " in userInput):
-				userInput = (userInput[userInput.find(" "):]).strip()
-				# Tcp se encarga de dividir. Se asumen "fin" como true
-				return self.__msgFormatter.formatRequestRead("true", int(userInput))
-
-			else: # solo está el "-r"
-				# Tcp se encarga de dividir. Se asumen "fin" como true
-				return self.__msgFormatter.formatRequestRead("true", -1)
-				
-		elif(action == "write"):
-			print("WRITE")
-		else:
-			print("INVALID ACTION")
-
-
+				return self.__msgFormatter.formatRequestWrite("true",content)
+		
+		return None
 
 ####################################################################################
 
@@ -138,8 +152,7 @@ class Client:
 		validated = json_response['validated']
 
 		if (validated == False):
-			printErrors("User not validated")
-			self.__close()
+			self.__close(f"Program finished: {TXT_RED}user is invalid{TXT_RESET}")
 		
 		printMsgTime(f"{TXT_GREEN}User validated.{TXT_RESET} Welcome {self.__username}\n")
 		self.__canWrite = json_response['canWrite']
@@ -165,8 +178,9 @@ class Client:
 
 ####################################################################################
 
-	def __close(self):
+	def __close(self, msg):
 		# Invokes Simulator_Tcp to __close the connection ........Agregar.........
+		printMsgTime(f"{msg}")
 		printMsgTime(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
 		exit(0)
 
