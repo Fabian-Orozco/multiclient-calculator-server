@@ -2,9 +2,9 @@ import json
 import random
 import socket
 from time import sleep
-from typing_extensions import Self
 import Communicator
 from datetime import datetime
+from MessageFormatter import MessageFormatter
 from Utilities import *
 
 class SimulatorTcp(Communicator.Communicator):
@@ -15,6 +15,7 @@ class SimulatorTcp(Communicator.Communicator):
 		self.__resendTimeout = 2             # timeout of 2 seconds before resending message
 		self.__maxTries = 4                  # maximum of resends before disconnecting
 		self.__destination = (ipAddres,port) # tuple with destination address and port
+		self.__formatter = MessageFormatter()
 
 	## function waiting for some client to ask for connection
 	def listen(self, newPort):
@@ -83,7 +84,9 @@ class SimulatorTcp(Communicator.Communicator):
 		# connecRequest = format.formatSyn(self.__seqValue)  
 		'''
 		self._sock.settimeout(self.__resendTimeout)
-		connectRequest = "{\"type\":\"syn\",\"seq\":" + f"{self.__seqValue}" + "}"
+
+		connectRequest = self.__formatter.formatSyn(self.__seqValue)
+
 		sendTries = 0;
 		printMsgTime(f"{TXT_YELLOW}Connecting to ip:{self.__destination[0]} | port:{self.__destination[1]}{TXT_RESET}")
 		while(sendTries < self.__maxTries):
@@ -114,8 +117,7 @@ class SimulatorTcp(Communicator.Communicator):
 		return False
 	
 	def __sendNewPort(self, newPort):
-		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue},\"port\":" + f"{newPort}" + "}"
-
+		ackMesage = self.__formatter.formatAck(self.__seqValue, self.__ack, newPort)
 		## testing
 		self._sendMessage(ackMesage, self.__destination)
 
@@ -175,14 +177,15 @@ class SimulatorTcp(Communicator.Communicator):
 		# format = MessageFormatter
 		# acceptRequest = format.formatAck(self.__seqValue, self.__ack)
 		'''
-		ackMesage = "{\"type\":\"ack\",\"ack\":" + f"{self.__ack},\"seq\":" + f"{self.__seqValue}" + "}" 
+		ackMesage = self.__formatter.formatAck(self.__seqValue, self.__ack)
+
 		self._sendMessage(ackMesage, self.__destination)
 
 	def sendTcpMessage(self, message):
 		self._sock.settimeout(self.__resendTimeout)
 
 		self.__seqValue += 1
-		message = "{\"seq\":" + f"{self.__seqValue}," + message + "}"
+		message = "{" + self.__formatter.jsonFormat("seq", self.__seqValue, ",") + message
 
 		# IMPORTANT increment seqValue
 
