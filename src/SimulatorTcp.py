@@ -4,6 +4,7 @@ import random
 import socket
 
 from cupshelpers import Printer
+from urllib3 import Retry
 import Communicator
 from datetime import datetime
 from MessageFormatter import MessageFormatter
@@ -293,11 +294,14 @@ class SimulatorTcp(Communicator.Communicator):
 	# @remark method sends the ack
 	# @return tthe received message
 	def receiveTcpMessage(self):
-		printMsgTime(f"{TXT_YELLOW}joining messages{TXT_RESET}") 
 		message = self.__receiveTcp()
+		if (message == "timeout"):
+			return message
+
 		jsonMessage = json.loads(message)
 
-		if (jsonMessage["fin"] == False):
+		if ("fin" in jsonMessage and jsonMessage["fin"] == False):
+			printMsgTime(f"{TXT_YELLOW}joining messages{TXT_RESET}") 
 			message = self.__joinMessages(message)
 	
 		return message
@@ -308,6 +312,7 @@ class SimulatorTcp(Communicator.Communicator):
 	# @remark method sends the ack
 	# @return tthe received message
 	def __joinMessages(self, firstMessage):
+		self._sock.settimeout(None)
 		completeMessage = str(firstMessage).removesuffix("\"}")
 		tempMessage = ""
 		while(True):
@@ -322,8 +327,11 @@ class SimulatorTcp(Communicator.Communicator):
 		return completeMessage
 
 	def __receiveTcp(self):
-		# receive message
-		message, otherAddress = self._receiveMessage()
+		try:
+			# receive message
+			message, otherAddress = self._receiveMessage()
+		except socket.timeout:
+			return "timeout"
 
 		# load data to generate ack
 		information = json.loads(message)
@@ -355,6 +363,9 @@ class SimulatorTcp(Communicator.Communicator):
 
 	def close(self):
 		self._sock.close()
+
+	def setTimeout(self, timeout):
+		self._sock.settimeout(timeout)
 
 if(__name__ == '__main__'):
 	format = MessageFormatter()
