@@ -62,6 +62,24 @@ class Validator:
         elif((input[i + 1] != "(") and (input[i + 1] in self.VALID_NUMBERS == False)):      # At the beggining of the string
             return False
 
+    
+    def __checkParenthesis(self, input, length, i):
+        char = input[i]
+        if ((i + 1) < length):          # Verifies that there is space after the currect parenthesis
+            if ((char == "(") and (input[i + 1] in self.VALID_SYMBOLS)):                # Only numbers after "("
+                if (input[i + 1] != "("):
+                    return False
+            elif((char == ")") and ((input[i + 1] in self.VALID_SYMBOLS) == False)):    # Only symbols after ")"
+                if (input[i + 1] != "-"):
+                    return False
+            if((i - 1) >= 0):   # Verifies that there is space before the currect parenthesis
+                if(((char == "(") and ((input[i - 1] in self.VALID_SYMBOLS) == False))):# Only symbols before "("
+                    if (input[i - 1] != "-"):
+                        return False
+                if((char == ")") and (input[i - 1] in self.VALID_SYMBOLS)):             # Only numbers before ")"
+                    if (input[i - 1] != ")"):
+                        return False
+
 
     ## Verifies the input operation string
     # @param input: The input operation string 
@@ -104,8 +122,8 @@ class Validator:
                                 else:
                                     if ((char == input[i + 1])):  #Verifies that there's not duplicated symbols such as ++
                                         return False
-                                    #if ((input[i + 1] in self.VALID_SYMBOLS) and (input[i + 1] != "(") and (input[i + 1] != "-")):  
-                                    #    return False       # After a symbol only can be a number or "(" or "-" 
+                                    if ((input[i + 1] in self.VALID_SYMBOLS) and (input[i + 1] != "(") and (input[i + 1] != "-")):  
+                                        return False       # After a symbol only can be a number or "(" or "-" 
 
                         # Is a parenthesis
                         else:      
@@ -114,20 +132,9 @@ class Validator:
                             else:
                                 closeParenthesis = closeParenthesis + 1
 
-                            if ((i + 1) < length):          # Verifies that there is space after the currect parenthesis
-                                if ((char == "(") and (input[i + 1] in self.VALID_SYMBOLS)):                # Only numbers after "("
-                                    if (input[i + 1] != "("):
-                                        return False
-                                elif((char == ")") and ((input[i + 1] in self.VALID_SYMBOLS) == False)):    # Only symbols after ")"
-                                    if (input[i + 1] != "-"):
-                                        return False
-                                if((i - 1) >= 0):   # Verifies that there is space before the currect parenthesis
-                                    if(((char == "(") and ((input[i - 1] in self.VALID_SYMBOLS) == False))):# Only symbols before "("
-                                        if (input[i - 1] != "-"):
-                                            return False
-                                    if((char == ")") and (input[i - 1] in self.VALID_SYMBOLS)):             # Only numbers before ")"
-                                        if (input[i - 1] != ")"):
-                                            return False
+                            if(self.__checkParenthesis(input, length, i) == False):
+                                return False
+
                         i = i + 1
                     else:                           # If the currect character is invalid return False
                         return False
@@ -151,7 +158,7 @@ def main():
 
     validator = Validator()
 
-    input = "sqrt(-1)"
+    input = "-((10+2)--((1+2)))"
 
     res = validator.validateInput(input)
 
