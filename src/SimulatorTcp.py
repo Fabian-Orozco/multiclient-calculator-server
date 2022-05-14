@@ -1,7 +1,9 @@
 import json
+from operator import truediv
 import random
 import socket
-from time import sleep
+
+from cupshelpers import Printer
 import Communicator
 from datetime import datetime
 from MessageFormatter import MessageFormatter
@@ -18,12 +20,12 @@ class SimulatorTcp(Communicator.Communicator):
 		self.__formatter = MessageFormatter()
 
 	## function waiting for some client to ask for connection
+	# @remark, this does the handshake form the receiver part
+	# @param newPort is the new port to which the client will be connected
+	# return false if the handshake fails
 	def listen(self, newPort):
 		self._sock.settimeout(None)
-		self.__seqValue = random.randint(1000,2000)
-		##testing
-		# we set seqValue to 
-		#self.__seqValue = 10
+		self.__seqValue = random.randint(100,999)
 
 		# wait for connection request message
 		# example of connection request mesage
@@ -64,25 +66,19 @@ class SimulatorTcp(Communicator.Communicator):
 			# IMPORTANT increment seqValue
 			self.__seqValue += 1
 			# send ack message with new port to connect
-			self.__sendNewPort(newPort)
+			ackMesageAndPort = self.__formatter.formatAck(self.__seqValue, self.__ack, newPort)
+			self._sendMessage(ackMesageAndPort, self.__destination)
 			printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]} {TXT_RESET}")
 			return True
 
 	## function to ask for connection
+	# @remark, this does the handshake form the sender part
+	# return false if the handshake fails
 	def connect(self):
-		self.__seqValue = random.randint(1000,2000)
-		
-		##testing
-		# we set seqValue to 
-		#self.__seqValue = 0
+		self.__seqValue = random.randint(100,999)
 
 		## Example of connection request mesage
 		# {"type":"syn","seq":"0"}
-		'''
-		Asi seria con la clase de format
-		# format = MessageFormatter
-		# connecRequest = format.formatSyn(self.__seqValue)  
-		'''
 		self._sock.settimeout(self.__resendTimeout)
 
 		connectRequest = self.__formatter.formatSyn(self.__seqValue)
@@ -114,12 +110,7 @@ class SimulatorTcp(Communicator.Communicator):
 				printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]}{TXT_RESET}")
 				return True
 
-		return False
-	
-	def __sendNewPort(self, newPort):
-		ackMesage = self.__formatter.formatAck(self.__seqValue, self.__ack, newPort)
-		## testing
-		self._sendMessage(ackMesage, self.__destination)
+		return False		
 
 	def __accept(self):
 		sendTries = 0;
@@ -172,16 +163,103 @@ class SimulatorTcp(Communicator.Communicator):
 			return True
 
 	def __sendAckMessage(self):
-		'''
-		Asi seria con la clase de format
-		# format = MessageFormatter
-		# acceptRequest = format.formatAck(self.__seqValue, self.__ack)
-		'''
 		ackMesage = self.__formatter.formatAck(self.__seqValue, self.__ack)
 
 		self._sendMessage(ackMesage, self.__destination)
 
+
+	##Method to send a message with json format
+	# @param the message to be sent. Needs to be alreay formatted
+	# return true if the message was succesfully sent and the ack was correctly checked. Otherwise returns false
 	def sendTcpMessage(self, message):
+		# checks if message can be send directly
+		# max message length is 128 (buffer size)
+		if (len(message) >= self._BUFFER):
+			printMsgTime(f"{TXT_YELLOW}Dividing messages{TXT_RESET}")
+			# message is too long, we divide
+			messagesQueue = self.__divideMessage(message)
+			i = 0
+			# iuterates through queue and sends every message
+			for i in messagesQueue:
+				# print(i)
+				if (self.__sendTcp(i) == False ):
+					return False
+			return True
+		else:
+			# message is not too long, so we send it
+			return self.__sendTcp(message)
+
+
+	## Method to divide a message in multiple messages
+	# @param the message to divide
+	# @return queue of messages to send (this are calculated form the original message)
+	def __divideMessage(self, message):
+		jsonMessage = "{" + message
+		messageData = json.loads(jsonMessage)
+		# loads the opreation
+		operation = messageData["operation"]
+
+		# adds 2 to count the " at the beginning and the end
+		operationSize = len(operation)+2
+
+		# extracts metadata of message
+		# metadata is all the data used by tcp, not the actual message
+		metaData = message[0:message.find("\"operation\":")+13]
+		
+		# metadata also contains tne next string at the beginning {"seq":1258,
+		# so we add the length of this string to have ea more accurate calculation
+		metaDataSize = len(metaData) + 12
+		
+		# the minimum of divisions is 2
+		messageQuantity = 2
+
+		# determines quantity of messages to create
+		while (True):
+			if (((operationSize / messageQuantity) + metaDataSize) < self._BUFFER ):
+				printErrors(f"Entro quantity {messageQuantity} {operationSize}//{messageQuantity} + {metaDataSize}")
+				break
+			else:
+				messageQuantity = messageQuantity + 1
+
+		printErrors(f"message quantity {messageQuantity}")
+		# queue to store the multiple messages
+		messagesToSend = []
+		tempMessage = ""
+
+		# size of every message
+		partitionSize = int(operationSize / messageQuantity)
+		start = 0
+		end = partitionSize
+
+		# loop top generate all the messages
+		i = 0
+		newMetaData = str(metaData)
+		newMetaData = newMetaData.replace("\"fin\":true", "\"fin\":false")
+		while (i < (messageQuantity - 1)):
+			printErrors(f"star {start} end: {end}")
+			tempMessage = operation[start:end]
+			tempMessage = newMetaData + tempMessage + "\"}"
+			messagesToSend.append(tempMessage)
+			i = i + 1
+			if (i != (messageQuantity - 1)):
+				start = end
+				end += partitionSize
+		tempMessage = operation[end:]
+		tempMessage = metaData + tempMessage + "\"}"
+		messagesToSend.append(tempMessage)
+
+		printMsgTime(f"{TXT_RED} division result {TXT_RESET}")
+		for i in messagesToSend:
+				print(i)
+
+		# retunr the messages queue
+		return messagesToSend
+
+	## Send a TCP message
+	# @remark method already waits for the ack and checks it
+	# @param the message to send
+	# @return true if the message was succesfully sent and the ack was correctly checked.
+	def __sendTcp(self, message):
 		self._sock.settimeout(self.__resendTimeout)
 
 		self.__seqValue += 1
@@ -210,7 +288,40 @@ class SimulatorTcp(Communicator.Communicator):
 			printErrors("Closing connection.")
 			return False
 
+	## Methoid to receive a TCP message
+	# remark the method detects if messages are complete or not. If not it returns the general message
+	# @remark method sends the ack
+	# @return tthe received message
 	def receiveTcpMessage(self):
+		printMsgTime(f"{TXT_YELLOW}joining messages{TXT_RESET}") 
+		message = self.__receiveTcp()
+		jsonMessage = json.loads(message)
+
+		if (jsonMessage["fin"] == False):
+			message = self.__joinMessages(message)
+	
+		return message
+
+
+	## Methoid to receive a TCP message
+	# remark the method receives messages in json format
+	# @remark method sends the ack
+	# @return tthe received message
+	def __joinMessages(self, firstMessage):
+		completeMessage = str(firstMessage).removesuffix("\"}")
+		tempMessage = ""
+		while(True):
+			tempMessage = self.__receiveTcp()
+			tempMessage = json.loads(tempMessage)
+			completeMessage += tempMessage["operation"]
+			if (tempMessage["fin"] == True):
+				break
+
+		completeMessage = completeMessage.replace("\"fin\":false", "\"fin\":true")
+		completeMessage += "\"}"
+		return completeMessage
+
+	def __receiveTcp(self):
 		# receive message
 		message, otherAddress = self._receiveMessage()
 
@@ -244,3 +355,19 @@ class SimulatorTcp(Communicator.Communicator):
 
 	def close(self):
 		self._sock.close()
+
+if(__name__ == '__main__'):
+	format = MessageFormatter()
+	serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	ip = '127.0.0.2'
+	port = 8080
+	serverSocket.bind(('127.0.0.2', 8080))
+	addresInfo = [ip, port]
+	communication = SimulatorTcp(serverSocket, ip, port)
+	if (communication.listen(8080)):
+
+		message = communication.receiveTcpMessage()
+		printMsgTime(f"{TXT_YELLOW}COmplete message is {TXT_RESET}" + message)
+		#message = communication.receiveTcpMessage()
+		#printMsgTime(message)
+
