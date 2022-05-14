@@ -176,7 +176,6 @@ class SimulatorTcp(Communicator.Communicator):
 		# checks if message can be send directly
 		# max message length is 128 (buffer size)
 		if (len(message) >= self._BUFFER):
-			printMsgTime(f"{TXT_YELLOW}Dividing messages{TXT_RESET}")
 			# message is too long, we divide
 			messagesQueue = self.__divideMessage(message)
 			i = 0
@@ -217,12 +216,10 @@ class SimulatorTcp(Communicator.Communicator):
 		# determines quantity of messages to create
 		while (True):
 			if (((operationSize / messageQuantity) + metaDataSize) < self._BUFFER ):
-				printErrors(f"Entro quantity {messageQuantity} {operationSize}//{messageQuantity} + {metaDataSize}")
 				break
 			else:
 				messageQuantity = messageQuantity + 1
 
-		printErrors(f"message quantity {messageQuantity}")
 		# queue to store the multiple messages
 		messagesToSend = []
 		tempMessage = ""
@@ -237,7 +234,6 @@ class SimulatorTcp(Communicator.Communicator):
 		newMetaData = str(metaData)
 		newMetaData = newMetaData.replace("\"fin\":true", "\"fin\":false")
 		while (i < (messageQuantity - 1)):
-			printErrors(f"star {start} end: {end}")
 			tempMessage = operation[start:end]
 			tempMessage = newMetaData + tempMessage + "\"}"
 			messagesToSend.append(tempMessage)
@@ -249,11 +245,7 @@ class SimulatorTcp(Communicator.Communicator):
 		tempMessage = metaData + tempMessage + "\"}"
 		messagesToSend.append(tempMessage)
 
-		printMsgTime(f"{TXT_RED} division result {TXT_RESET}")
-		for i in messagesToSend:
-				print(i)
-
-		# retunr the messages queue
+		# return the messages queue
 		return messagesToSend
 
 	## Send a TCP message
@@ -301,7 +293,6 @@ class SimulatorTcp(Communicator.Communicator):
 		jsonMessage = json.loads(message)
 
 		if ("fin" in jsonMessage and jsonMessage["fin"] == False):
-			printMsgTime(f"{TXT_YELLOW}joining messages{TXT_RESET}") 
 			message = self.__joinMessages(message)
 	
 		return message
@@ -376,7 +367,7 @@ if(__name__ == '__main__'):
 	addresInfo = [ip, port]
 	communication = SimulatorTcp(serverSocket, ip, port)
 	if (communication.listen(8080)):
-
+		communication.setTimeout(50)
 		message = communication.receiveTcpMessage()
 		printMsgTime(f"{TXT_YELLOW}COmplete message is {TXT_RESET}" + message)
 		#message = communication.receiveTcpMessage()
