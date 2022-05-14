@@ -51,9 +51,7 @@ class Client:
 			input = self.showInterface()
 			
 			if (input == 'q') :
-				self.__disconnect()
 				break;
-			
 			elif (input == '-h') : 
 				self.__argsAnalizer.printHelp()
 			else:
@@ -66,7 +64,7 @@ class Client:
 					# self.__verifyServerResponse()
 				else:
 					printErrors(f"Invalid input. Try again...")
-
+		self.__disconnect()
 		self.__close(f"Program {TXT_BLUE}finished{TXT_RESET} with 'q'")  # enter 'q' to exit
 ####################################################################################
 
@@ -137,11 +135,11 @@ class Client:
 	##
 	#
 	def __connect(self):
-		if(self.__comm.connect() == False):
+		if (self.__comm.connect() == False):
 			self.__close()
 
 	def __disconnect(self):
-		printMsgTime(f"{TXT_RED} Disconnecting from server{TXT_RESET}")
+		printMsgTime(f"{TXT_RED} Disconnecting from server...{TXT_RESET}")
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
 		self.__comm.sendTcpMessage(disconnectMessage)
 	
@@ -186,9 +184,9 @@ class Client:
 
 ####################################################################################
 
-	def __close(self, msg):
+	def __close(self, msg = ""):
 		# Invokes Simulator_Tcp to __close the connection ........Agregar.........
-		printMsgTime(f"{msg}")
+		if (msg): printMsgTime(f"{msg}")
 		printMsgTime(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
 		exit(0)
 
