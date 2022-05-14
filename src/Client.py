@@ -50,7 +50,8 @@ class Client:
 		while True:
 			input = self.showInterface()
 			
-			if (input == 'q') : 
+			if (input == 'q') :
+				self.__disconnect()
 				break;
 			
 			elif (input == '-h') : 
@@ -60,7 +61,7 @@ class Client:
 				formatedMessage = self.__generateAction(input)
 				if (formatedMessage != None): 
 					print("testing_Mensaje formado para enviar:\n" + formatedMessage + "\n")
-					# self.__sendMessage(formatedMessage)
+					self.__sendMessage(formatedMessage)
 					# serverResponse = self.__receiveMessage(formatedMessage)
 					# self.__verifyServerResponse()
 				else:
@@ -93,9 +94,11 @@ class Client:
 		try:
 			return input(f"{TXT_BLUE}>{TXT_RESET} Enter the action to perform: ")
 		except KeyboardInterrupt as err:  # SIGINT (ctrl+c)
+			self.__disconnect()
 			self.__close(f'Program finished by {TXT_RED}signal SIGINT{TXT_RESET}')
 
 		except EOFError as err:  # EOF (ctrl+d)
+			self.__disconnect()
 			self.__close(f'Program finished by {TXT_RED}signal EOF{TXT_RESET}')
 		return 'q'
 
@@ -137,6 +140,11 @@ class Client:
 		if(self.__comm.connect() == False):
 			self.__close()
 
+	def __disconnect(self):
+		printMsgTime(f"{TXT_RED} Disconnecting from server{TXT_RESET}")
+		disconnectMessage = self.__msgFormatter.formatDisconnect()
+		self.__comm.sendTcpMessage(disconnectMessage)
+	
 ####################################################################################
 
 	##
