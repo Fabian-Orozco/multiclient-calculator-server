@@ -1,5 +1,6 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
+from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
 from SimulatorTcp import SimulatorTcp
@@ -30,7 +31,7 @@ class Client:
 	def __analizeArgs(self):
 		if (self.__argsAnalizer.analizeArgs() == True):
 			self.__username , self.__password = self.__argsAnalizer.getData()
-			print(f"The format of the arguments {TXT_GREEN}is valid{TXT_RESET}")
+			# print(f"The format of the arguments {TXT_GREEN}is valid{TXT_RESET}")
 		else:
 			self.__argsAnalizer.printUsage()
 			self.__close(f"The format of the arguments {TXT_RED}is invalid{TXT_RESET}")
@@ -45,6 +46,7 @@ class Client:
 
 		# handshake and login
 		self.__connect()  # Invokes to tcp. If invalid, close program
+		sleep(2)
 		self.login()  # Invokes to  tcp. If invalid, close program
 		
 		while True:
@@ -135,13 +137,13 @@ class Client:
 	##
 	#
 	def __connect(self):
-		if (self.__comm.connect() == False):
-			self.__close()
+		if(self.__comm.connect() == False):
+			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 
 	def __disconnect(self):
-		printMsgTime(f"{TXT_RED} Disconnecting from server...{TXT_RESET}")
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
 		self.__comm.sendTcpMessage(disconnectMessage)
+		self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 	
 ####################################################################################
 
@@ -150,20 +152,22 @@ class Client:
 	def login(self):
 		# Invokes messageFormatter to format the string (user+password) ..Agregar..
 		message = self.__msgFormatter.formatLogin(self.__username, self.__password)
+		printMsgTime(f"{TXT_YELLOW}Logging in as{TXT_RESET}: {self.__username}")
 		self.__sendMessage(message)
-		
+		self.__comm.setTimeout(10)
 		response = self.__receiveMessage()
+		if (response == "timeout"):
+			self.__close(f"Program finished: {TXT_RED}the server did not respond.{TXT_RESET}")
 		json_response = json.loads(response)
 
 		validated = json_response['validated']
 
 		if (validated == False):
-			self.__close(f"Program finished: {TXT_RED}user is invalid{TXT_RESET}")
+			self.__close(f"Program finished: {TXT_RED}user is invalid.{TXT_RESET}")
 		
 		printMsgTime(f"{TXT_GREEN}User validated.{TXT_RESET} Welcome {self.__username}\n")
 		self.__canWrite = json_response['canWrite']
 		return True
-		
 
 ####################################################################################
 
@@ -171,7 +175,9 @@ class Client:
 	#
 	def __sendMessage(self, message):
 		# Invokes Simulator_Tcp to send a message
-		self.__comm.sendTcpMessage(message)
+		if (self.__comm.sendTcpMessage(message) == False):
+			printErrors(f"{TXT_RED}Server did not respond.{TXT_RESET}")
+			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 
 ####################################################################################
 
