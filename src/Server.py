@@ -22,7 +22,7 @@ class Server:
 		self.__requestsQueue = queue.LifoQueue()
 
 	def shutDownServer(self):
-		printMsgTime(f'{TXT_RED}|====Shutting down server====|{TXT_RESET}')
+		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
 		# shutdown the server closes the socket
 		self.__welcomingSocket.close()
 
@@ -109,7 +109,7 @@ class Server:
 			return (False, user)
 
 	def run(self):
-		printMsgTime(f"{TXT_GREEN}|====Server started====|{TXT_RESET}")
+		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
 		printMsgTime(f"{TXT_YELLOW}Binded to ip:{self.__host} | port:{self.__port}{TXT_RESET}")
 
 		self.__waitForClient()
