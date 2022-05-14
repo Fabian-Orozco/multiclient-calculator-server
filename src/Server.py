@@ -1,4 +1,6 @@
 from email import message
+from importlib.abc import TraversableResources
+from tracemalloc import stop
 from SimulatorTcp import SimulatorTcp
 import socket
 import threading
@@ -19,7 +21,7 @@ class Server:
 		self.tcpCommunication = SimulatorTcp(self.__welcomingSocket, self.__host, self.__port)
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
-		self.__requestsQueue = queue.LifoQueue()
+		self.__requestsQueue = queue.Queue()
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|====Shutting down server====|{TXT_RESET}')
@@ -27,8 +29,14 @@ class Server:
 		self.__welcomingSocket.close()
 
 	def __waitForClient(self):
+		# start of thread tha consumes from the requests queue
+		consumerThread = threading.Thread(target = self.__consumeRequests)
+		consumerThread.daemon = True
+		consumerThread.start()
+
 		newPort = self.__port
 		# waits for client connection
+		# creates a thread for each client
 		try:
 			while (True):
 				try:
@@ -43,9 +51,8 @@ class Server:
 				except KeyboardInterrupt or OSError or EOFError:
 					break
 		finally:
-			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET}{TXT_YELLOW}Server queue contains the next messages:{TXT_RESET}")
-			while not self.__requestsQueue.empty():
-				print(self.__requestsQueue.get())
+			# put stop condition in the queue to estop the consumer thread
+			self.__requestsQueue.put("stop")
 			self.shutDownServer()
 
 	def __handleConnection(self, port, values, destination):
@@ -88,6 +95,19 @@ class Server:
 			jsonMessage = json.loads(messageReceived)
 		return "disconnect"
 
+	def __consumeRequests(self):
+		request = ""
+		while (True):
+			# Get the next data to consume, or block while queue is empty
+			request = self.__requestsQueue.get(block = True, timeout = None)
+
+			# checking if the request is a stop condition
+			if (request == "stop"):
+				break
+			# send the message through the pipe
+			# testing
+			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} message to send through pipe: {request}")
+		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Closing consumer thread: {threading.get_ident()}")
 
 	def __clientLogin(self, communicator):
 		canWrite = False
