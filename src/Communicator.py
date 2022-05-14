@@ -9,7 +9,7 @@ class Communicator:
 	## Constructor
 	def __init__(self, socket):
 		self._sock = socket           # Socket
-		self.__BUFFER = 128          # buffer of received messages in bytes
+		self._BUFFER = 128          # buffer of received messages in bytes
 		self.__cypher = Cypher()             # to encrypt ad decrypt messages
 
 
@@ -27,7 +27,7 @@ class Communicator:
 	# @return the received message, ipAddress and port of the client
 	def _receiveMessage(self):
 		# we receive a message with a 128 bytes buffer
-		data, client_address = self._sock.recvfrom(self.__BUFFER)
+		data, client_address = self._sock.recvfrom(self._BUFFER)
 		data = self.__cypher.decrypt(data.decode('utf-8'))
 		printMsgTime("Received message: "+ data + f" from {client_address}")
 		return data, client_address
