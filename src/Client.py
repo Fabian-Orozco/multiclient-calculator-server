@@ -4,7 +4,7 @@ from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
 from SimulatorTcp import SimulatorTcp
-# from DataValidator import DataValidator
+from Validator import Validator
 from MessageFormatter import MessageFormatter
 import json
 import socket
@@ -19,7 +19,7 @@ class Client:
 	def __init__(self, port, host):
 		self.__argsAnalizer = Args_analizer()
 		self.__comm = SimulatorTcp(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), port, host)
-		# self.__validator = DataValidator()
+		self.__validator = Validator()
 		self.__msgFormatter = MessageFormatter()
 		self.__username = ""
 		self.__password = ""
@@ -57,7 +57,6 @@ class Client:
 			elif (input == '-h') : 
 				self.__argsAnalizer.printHelp()
 			else:
-				# self.__validateData(input)
 				formatedMessage = self.__generateAction(input)
 				if (formatedMessage != None): 
 					print("testing_Mensaje formado para enviar:\n" + formatedMessage + "\n")
@@ -106,9 +105,9 @@ class Client:
 
 	##
 	#
-	def __validateData(self, userInput):
-		## El atributo de tipo DataValidator se encarga de esto ......Agregar.......
-		print("")
+	def __validateData(self, content):
+		return self.__validator.validateInput(content)
+
 ####################################################################################
 
 	##
@@ -128,8 +127,8 @@ class Client:
 
 		elif("-w" in userInput):
 			if (" " in userInput):
-				return self.__msgFormatter.formatRequestWrite("true",content)
-		
+				if (self.__validateData(content)):  # valida la operación matemática				
+					return self.__msgFormatter.formatRequestWrite("true",content)
 		return None
 
 ####################################################################################
