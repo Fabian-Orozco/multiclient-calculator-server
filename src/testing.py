@@ -17,4 +17,4 @@ if(__name__ == '__main__'):
         message = format.formatRequestWrite("true", "2+3+4+8+354")
         printMsgTime(f"{TXT_YELLOW}Sending message is {TXT_RESET}" + message)
 
-        communication.sendTcpMessage(message)
+        #communication.sendTcpMessage(message)
