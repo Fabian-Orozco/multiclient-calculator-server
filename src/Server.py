@@ -43,12 +43,14 @@ class Server:
 				except KeyboardInterrupt or OSError or EOFError:
 					break
 		finally:
-			printMsgTime(f"{TXT_YELLOW}Server queue contains the next messages:{TXT_RESET}")
+			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET}{TXT_YELLOW}Server queue contains the next messages:{TXT_RESET}")
 			while not self.__requestsQueue.empty():
 				print(self.__requestsQueue.get())
 			self.shutDownServer()
 
 	def __handleConnection(self, port, values, destination):
+		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Handling request in thread: {threading.get_ident()}")
+
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((self.__host, port))
 		communicator = SimulatorTcp(sock, destination[0], destination[1])
@@ -62,14 +64,15 @@ class Server:
 		action = self.__handleRequest(communicator)
 		if (action == "timeout"):
 			printMsgTime(f"User \"{user}\" {TXT_RED}timedout thread: {threading.get_ident()}{TXT_RESET}")
-		if (action == "disconnect"):
-			printMsgTime(f"User \"{user}\" {TXT_RED}disconnected thread: {threading.get_ident()}{TXT_RESET}")
+		
+		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Closing thread: {threading.get_ident()}")
+
+		printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
 
 
 
 	def __handleRequest(self, communicator):
 		communicator.setTimeout(self.__maxTimeOut)
-		printMsgTime(f"Handling request in thread: {threading.get_ident()}")
 		messageReceived = communicator.receiveTcpMessage()
 		if (messageReceived == "timeout"):
 			return messageReceived
