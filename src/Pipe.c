@@ -16,13 +16,12 @@
  * @param msg
  * @return char*
  */
-char *sendMsg(char *msg)
+char *sendReceiveMsg(char *msg)
 {
     int pipeFDs[2];            // Create 2 File descriptors for the Pipe
     pipe(pipeFDs);             // System call to create the Pipe
     int sizeMsg = sizeof(msg); // Lenght of the msg
     char buf[sizeMsg];         // Buffer to riceibe the msg
-
 
     pid_t cpid = fork(); // fork a child process
     if (cpid < 0)
@@ -34,6 +33,8 @@ char *sendMsg(char *msg)
         read(pipeFDs[ReadEnd], &buf, sizeMsg); // child reads from the Pipe[0]
         close(pipeFDs[ReadEnd]);               // close the Pipe
         char *str = buf;
+        printf("%s", buf);
+
         return str; // Return the message to Python
     }
 
@@ -42,7 +43,7 @@ char *sendMsg(char *msg)
         close(pipeFDs[ReadEnd]);                    // parent writes, doesn't read
         write(pipeFDs[WriteEnd], msg, sizeof(msg)); // write the bytes to the pipe
         close(pipeFDs[WriteEnd]);                   // done writing: generate eof
-        char *str = "papa";
+        char *str = "father";
         return str;
     }
 }
