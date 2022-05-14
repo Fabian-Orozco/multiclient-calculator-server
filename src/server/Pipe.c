@@ -2,8 +2,9 @@
 #include <stdio.h>
 #include <stdlib.h> // exit functions
 #include <unistd.h> // read, write, pipe, _exit
+#include <string.h>
 
-//gcc -shared -W -o libPipe.so Pipe.c to compile
+// gcc -shared -W -o libPipe.so Pipe.c to compile
 
 #define ReadEnd 0
 #define WriteEnd 1
@@ -20,9 +21,8 @@ char *sendMsg(char *msg)
 {
     int pipeFDs[2];            // Create 2 File descriptors for the Pipe
     pipe(pipeFDs);             // System call to create the Pipe
-    int sizeMsg = sizeof(msg); // Lenght of the msg
-    char buf[sizeMsg];         // Buffer to riceibe the msg
-
+    char buf[512];            // Buffer to riceibe the msg
+    int readBytes;
 
     pid_t cpid = fork(); // fork a child process
     if (cpid < 0)
@@ -30,17 +30,19 @@ char *sendMsg(char *msg)
 
     if (0 == cpid) // child process work
     {
-        close(pipeFDs[WriteEnd]);              // child reads, doesn't write
-        read(pipeFDs[ReadEnd], &buf, sizeMsg); // child reads from the Pipe[0]
-        close(pipeFDs[ReadEnd]);               // close the Pipe
+        close(pipeFDs[WriteEnd]); // child reads, doesn't write
+        
+        read(pipeFDs[ReadEnd], &buf, 512);// child reads from the Pipe[0]
+        close(pipeFDs[ReadEnd]); // close the Pipe
         char *str = buf;
         return str; // Return the message to Python
     }
 
     else // father process work
     {
-        close(pipeFDs[ReadEnd]);                    // parent writes, doesn't read
-        write(pipeFDs[WriteEnd], msg, sizeof(msg)); // write the bytes to the pipe
+        close(pipeFDs[ReadEnd]); // parent writes, doesn't read
+        strcpy(buf, msg);
+        write(pipeFDs[WriteEnd], buf, 512); // write the bytes to the pipe
         close(pipeFDs[WriteEnd]);                   // done writing: generate eof
         char *str = "papa";
         return str;
