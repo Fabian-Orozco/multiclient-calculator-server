@@ -19,7 +19,7 @@ class Communicator:
 	# destination parameter is an tuple with the next format: (ipAddress, port)
 	def _sendMessage(self, message, destination):
 		# we send message in utf-8 encoding
-		printMsgTime("Send message: "+ message + f" to {destination}")
+		# testing # printMsgTime("Send message: "+ message + f" to {destination}")
 		message = self.__cypher.encrypt(message)
 		self._sock.sendto(message.encode('utf-8'), destination)
 
@@ -29,5 +29,5 @@ class Communicator:
 		# we receive a message with a 128 bytes buffer
 		data, client_address = self._sock.recvfrom(self._BUFFER)
 		data = self.__cypher.decrypt(data.decode('utf-8'))
-		printMsgTime("Received message: "+ data + f" from {client_address}")
+		# testing # printMsgTime("Received message: "+ data + f" from {client_address}")
 		return data, client_address
