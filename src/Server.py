@@ -106,7 +106,7 @@ class Server:
 			if (request == "stop"):
 				break
 			# send the message through the pipe
-			self.__sendPipe(request)
+			#self.__sendPipe(request)
 			# testing
 			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} message to send through pipe: {request}")
 
