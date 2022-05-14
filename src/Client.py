@@ -138,12 +138,12 @@ class Client:
 	#
 	def __connect(self):
 		if(self.__comm.connect() == False):
-			self.__close()
+			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 
 	def __disconnect(self):
-		printMsgTime(f"{TXT_RED} Disconnecting from server{TXT_RESET}")
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
 		self.__comm.sendTcpMessage(disconnectMessage)
+		self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 	
 ####################################################################################
 
@@ -152,6 +152,7 @@ class Client:
 	def login(self):
 		# Invokes messageFormatter to format the string (user+password) ..Agregar..
 		message = self.__msgFormatter.formatLogin(self.__username, self.__password)
+		printMsgTime(f"{TXT_YELLOW}Logging in as{TXT_RESET}: {self.__username}")
 		self.__sendMessage(message)
 		
 		response = self.__receiveMessage()
@@ -173,7 +174,9 @@ class Client:
 	#
 	def __sendMessage(self, message):
 		# Invokes Simulator_Tcp to send a message
-		self.__comm.sendTcpMessage(message)
+		if (self.__comm.sendTcpMessage(message) == False):
+			printErrors(f"{TXT_RED}Server did not respond.{TXT_RESET}")
+			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 
 ####################################################################################
 
@@ -187,7 +190,6 @@ class Client:
 ####################################################################################
 
 	def __close(self, msg):
-		# Invokes Simulator_Tcp to __close the connection ........Agregar.........
 		printMsgTime(f"{msg}")
 		printMsgTime(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
 		exit(0)
