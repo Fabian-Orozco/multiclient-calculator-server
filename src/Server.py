@@ -56,8 +56,6 @@ class Server:
 			self.shutDownServer()
 
 	def __handleConnection(self, port, values, destination):
-		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Handling request in thread: {threading.get_ident()}")
-
 		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 		sock.bind((self.__host, port))
 		communicator = SimulatorTcp(sock, destination[0], destination[1])
@@ -66,17 +64,18 @@ class Server:
 
 		loginAccepted, user = self.__clientLogin(communicator)
 		if(loginAccepted == False):
+			if (user == "timeout"):
+				printMsgTime(f"{TXT_RED}Login timedout{TXT_RESET}")
+			printMsgTime(f"{TXT_RED}Connection finished{TXT_RESET}")
 			communicator.close()
 			return
+
 		action = self.__handleRequest(communicator)
 		if (action == "timeout"):
-			printMsgTime(f"User \"{user}\" {TXT_RED}timedout thread: {threading.get_ident()}{TXT_RESET}")
-		
-		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Closing thread: {threading.get_ident()}")
+			printMsgTime(f"User \"{user}\" {TXT_RED} reached timeout{TXT_RESET}")
 
 		printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
-
-
+		communicator.close()
 
 	def __handleRequest(self, communicator):
 		communicator.setTimeout(self.__maxTimeOut)
@@ -107,12 +106,14 @@ class Server:
 			# send the message through the pipe
 			# testing
 			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} message to send through pipe: {request}")
-		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Closing consumer thread: {threading.get_ident()}")
 
 	def __clientLogin(self, communicator):
 		canWrite = False
 		userAccepted = False
+		communicator.setTimeout(20)
 		message = communicator.receiveTcpMessage()
+		if (message == "timeout"):
+			return (False,"timeout")
 		loginInfo = json.loads(message)
 		userAccepted = self.__authenticator.checkLog(loginInfo['username'], loginInfo['password'])
 		if (userAccepted):
