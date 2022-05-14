@@ -159,14 +159,16 @@ def main():
 
     validator = Validator()
 
-    input = "sqrt(1)"
+    while True:
+        userInput = input(" > ingrese la operación: ")#"sqrt(1)"
 
-    res = validator.validateInput(input)
-
-    if (res == True):
-        print("Valido")
-    else:
-        print("Invalido")
+        if userInput == 'q': break
+        res = validator.validateInput(userInput)
+        
+        if (res == True):
+            print("Valido")
+        else:
+            print("Invalido")
 
 if __name__ == "__main__":
   	main()
