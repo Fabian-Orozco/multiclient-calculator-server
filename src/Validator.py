@@ -94,17 +94,15 @@ class Validator:
         # Cicle that goes through the input string
         while i < length:
             char = input[i]
-            
-            borders = self.__checkBorders(input, length)    # Check the first and last character
 
-            if (borders):           # Continues if the first and last character are right
+            if (self.__checkBorders(input, length)):           # Continues if the first and last character are right
                 if (char == "s"):                               # Verifies if there is a sqrt function and that is well typed
-                    operationFound = True
-                    square = self.__validateSquare(i, input)    
-                    if (square):
+                    operationFound = True  
+                    if (self.__validateSquare(i, input)):
                         openParenthesis = openParenthesis + 1   # If is well typed jumps to the space after the open parenthesis
                         i = i + 5
                     else:
+                        print("La funcion sqrt() no fue escrita correctamente")
                         return False                            # If the sqrt function is wrong typed returns false
                 else:
                     found = char in self.VALID_ENTRIES          # Validates that the current character is a valid one
@@ -116,8 +114,7 @@ class Validator:
                             if (((i + 1) < len(input)) and ((char in self.VALID_SYMBOLS) or char == "-")): # There is something after a symbol
                                 operationFound = True
                                 if(char == "-"):
-                                    minusValid = self.__checkMinus(input, i)
-                                    if (minusValid == False):
+                                    if (self.__checkMinus(input, i) == False):
                                         return False
                                 else:
                                     if ((char == input[i + 1])):  #Verifies that there's not duplicated symbols such as ++
@@ -137,19 +134,23 @@ class Validator:
 
                         i = i + 1
                     else:                           # If the currect character is invalid return False
+                        print("Se encontro caracteres invalidos en la operacion.\nLos caracteres validos son: +, -, *, /, a^b y sqrt(a)")
                         return False
             else:
                 return False
 
         if (i < 2):
+            print("Por favor, ingrese una operacion")
             return False
         else:
-            if(operationFound == False):               # There is at least one valid operation         
+            if(operationFound == False):               # There is at least one valid operation
+                print("No se encontraron operaciones.")       
                 return False
 
             if(openParenthesis == closeParenthesis):   # Verifies that the number of open and close parenthesis are equal and return true if they are
                 return True
             else:
+                print("La cantidad de parentesis abiertos y cerrados no coinciden")
                 return False
 
 
@@ -158,7 +159,7 @@ def main():
 
     validator = Validator()
 
-    input = "-((10+2)--((1+2)))"
+    input = "sqrt(1)"
 
     res = validator.validateInput(input)
 
