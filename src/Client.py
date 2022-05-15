@@ -26,17 +26,6 @@ class Client:
 		self.__canWrite = False
 	
 ####################################################################################
-
-	## method that calls the class that analyzes arguments to analyze if their format is valid or not
-	def __analizeArgs(self):
-		if (self.__argsAnalizer.analizeArgs() == True):
-			self.__username , self.__password = self.__argsAnalizer.getData()
-			# print(f"The format of the arguments {TXT_GREEN}is valid{TXT_RESET}")
-		else:
-			self.__argsAnalizer.printUsage()
-			self.__close(f"The format of the arguments {TXT_RED}is invalid{TXT_RESET}")
-			
-####################################################################################
 	
 	## method that handles the flow of client interaction: 
 	def run(self):
@@ -45,10 +34,10 @@ class Client:
 		self.__analizeArgs()  # if arguments are invalid invokes to __close.
 
 		# handshake and login
-		self.__connect()  # Invokes to tcp. If invalid, close program
-		sleep(2)
-		self.login()  # Invokes to  tcp. If invalid, close program
+		self.__connect()  # Invokes to tcp. If invalid, close program.
+		self.__login()  # Invokes to  tcp. If invalid, close program
 		
+		printMsgTime(f"Enter {TXT_YELLOW}q{TXT_RESET} to exit\n")  # header
 		while True:
 			input = self.showInterface()
 			
@@ -59,8 +48,9 @@ class Client:
 			else:
 				formatedMessage = self.__generateAction(input)
 				if (formatedMessage != None): 
-					print("testing_Mensaje formado para enviar:\n" + formatedMessage + "\n")
+					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					self.__sendMessage(formatedMessage)
+					# Etapa 3
 					# serverResponse = self.__receiveMessage(formatedMessage)
 					# self.__verifyServerResponse()
 				else:
@@ -69,21 +59,15 @@ class Client:
 		self.__close(f"Program {TXT_BLUE}finished{TXT_RESET} with 'q'")  # enter 'q' to exit
 ####################################################################################
 
-	## 
-	# 
-	def __verifyServerResponse(self, serverResponse):
-		# posibles llegadas: write/read with result , error [etapa 3], 
-		# {"seq”:228,"type":"request","fin":true,"request":"write","result":31,"operation":"2+4+5+8+5+7"}   6
-		# error solo si el indice está fuera del rango
-		# {"seq”:229,"type":"request","fin":true,"request":"read","index":"2",”error”:false,”result”:31,”operation”:"1+1+1+1+1+1+1+1+1+1"}
-
-		json_response = json.loads(serverResponse)
-		request = json_response["request"]
-		if (request == "read"):
-			print("")
-		elif(request == "write"):
-			print("")
-		
+	## method that calls the class that analyzes arguments to analyze if their format is valid or not
+	def __analizeArgs(self):
+		if (self.__argsAnalizer.analizeArgs() == True):
+			self.__username , self.__password = self.__argsAnalizer.getData()
+			# print(f"The format of the arguments {TXT_GREEN}is valid{TXT_RESET}")
+		else:
+			self.__argsAnalizer.printUsage()
+			self.__close(f"The format of the arguments {TXT_RED}is invalid{TXT_RESET}")
+			
 
 ####################################################################################
 
@@ -117,17 +101,17 @@ class Client:
 		content = (userInput[userInput.find(" "):]).strip() # action [content]
 
 		if (userInput == "-r"):  # read [] => all
-				# Tcp se encarga de dividir. Se asumen "fin" como true
+				# Tcp takes care of dividing. "end" is assumed to be true
 				return self.__msgFormatter.formatRequestRead("true", -1) 	# -r
 		
 		elif ("-r" in userInput):  		# read action
 			if (" " in userInput):		# read + index
-				# Tcp se encarga de dividir. Se asumen "fin" como true
+				# Tcp takes care of dividing. "end" is assumed to be true
 				return self.__msgFormatter.formatRequestRead("true", int(content))
 
 		elif("-w" in userInput):
 			if (" " in userInput):
-				if (self.__validateData(content)):  # valida la operación matemática				
+				if (self.__validateData(content)):  # validates the mathematical operation		
 					return self.__msgFormatter.formatRequestWrite("true",content)
 		return None
 
@@ -138,18 +122,21 @@ class Client:
 	def __connect(self):
 		if(self.__comm.connect() == False):
 			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
+		# to give the server time to establish the connection before logging in
+		sleep(1)
+
+####################################################################################
 
 	def __disconnect(self):
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
 		self.__comm.sendTcpMessage(disconnectMessage)
-		self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
 	
 ####################################################################################
 
 	##
 	#
-	def login(self):
-		# Invokes messageFormatter to format the string (user+password) ..Agregar..
+	def __login(self):
+		# Invokes messageFormatter to format the string (user+password)
 		message = self.__msgFormatter.formatLogin(self.__username, self.__password)
 		printMsgTime(f"{TXT_YELLOW}Logging in as{TXT_RESET}: {self.__username}")
 		self.__sendMessage(message)
@@ -183,14 +170,31 @@ class Client:
 	##
 	#
 	def __receiveMessage(self):
-		# Invokes Simulator_Tcp to receive a message ........Agregar.........
+		# Invokes Simulator_Tcp to receive a message
 		message = self.__comm.receiveTcpMessage()
 		return message
 
 ####################################################################################
 
+	## Etapa 3
+	# 
+	def __verifyServerResponse(self, serverResponse):
+		# posibles llegadas: write/read with result , error [etapa 3], 
+		# {"seq”:228,"type":"request","fin":true,"request":"write","result":31,"operation":"2+4+5+8+5+7"}   6
+		# error solo si el indice está fuera del rango
+		# {"seq”:229,"type":"request","fin":true,"request":"read","index":"2",”error”:false,”result”:31,”operation”:"1+1+1+1+1+1+1+1+1+1"}
+
+		json_response = json.loads(serverResponse)
+		request = json_response["request"]
+		if (request == "read"):
+			print("")
+		elif(request == "write"):
+			print("")
+		
+####################################################################################
+
 	def __close(self, msg = ""):
-		# Invokes Simulator_Tcp to __close the connection ........Agregar.........
+		# Invokes Simulator_Tcp to __close the connection
 		if (msg): printMsgTime(f"{msg}")
 		printMsgTime(f"{TXT_RED}|======: FINISH :======|{TXT_RESET}")
 		exit(0)
