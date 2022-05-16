@@ -1,4 +1,3 @@
-from email import message
 from importlib.abc import TraversableResources
 from tracemalloc import stop
 from SimulatorTcp import SimulatorTcp
@@ -10,6 +9,8 @@ from Authenticator import Authenticator
 import json
 from MessageFormatter import MessageFormatter
 import queue
+import ctypes
+from Dispatcher import Dispatcher
 
 class Server:
 	def __init__(self, host, port):
@@ -22,6 +23,7 @@ class Server:
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
 		self.__requestsQueue = queue.Queue()
+		self.__dispatcher = Dispatcher('127.0.0.2', 7070)
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
@@ -104,8 +106,25 @@ class Server:
 			if (request == "stop"):
 				break
 			# send the message through the pipe
+			self.__sendPipe(request)
 			# testing
 			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} message to send through pipe: {request}")
+
+	def __sendPipe(self, message):
+		# Cargamos la libreria 
+		libPipe = ctypes.CDLL('./libPipe.so')
+		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p, )
+		# Definimos el tipo del retorno de la función factorial
+		libPipe.sendReceiveMsg.restype = ctypes.c_char_p
+
+		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p,)
+		# print(message.encode('utf-8'))
+		message = libPipe.sendReceiveMsg(message.encode('utf-8'))
+		if (message != b'father'):
+			self.__dispatcher.dispatch(message)
+			exit(0)
+
+		return
 
 	def __clientLogin(self, communicator):
 		canWrite = False
