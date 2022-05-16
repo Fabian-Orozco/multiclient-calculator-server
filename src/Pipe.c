@@ -4,7 +4,7 @@
 #include <unistd.h> // read, write, pipe, _exit
 #include <string.h>
 
-// gcc -shared -W -o libPipe.so Pipe.c to compile
+// to compile: gcc -shared -W -o libPipe.so Pipe.c -fPIC 
 
 #define ReadEnd 0
 #define WriteEnd 1
@@ -17,7 +17,7 @@
  * @param msg
  * @return char*
  */
-char *sendMsg(char *msg)
+char *sendReceiveMsg(char *msg)
 {
     int pipeFDs[2];            // Create 2 File descriptors for the Pipe
     pipe(pipeFDs);             // System call to create the Pipe
@@ -44,7 +44,7 @@ char *sendMsg(char *msg)
         strcpy(buf, msg);
         write(pipeFDs[WriteEnd], buf, 512); // write the bytes to the pipe
         close(pipeFDs[WriteEnd]);                   // done writing: generate eof
-        char *str = "papa";
+        char *str = "father";
         return str;
     }
 }
