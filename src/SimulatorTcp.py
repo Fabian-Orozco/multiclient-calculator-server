@@ -172,7 +172,11 @@ class SimulatorTcp(Communicator.Communicator):
 	def sendTcpMessage(self, message):
 		# checks if message can be send directly
 		# max message length is 128 (buffer size)
-		if (len(message) >= self._BUFFER):
+
+		# we add 14 because that is the length of the strigng tha contains the seq
+		messagesize = len(message)+14
+		print(f"Mesnaje mide: {message} y {len(message)}")
+		if (messagesize > self._BUFFER):
 			print(f"hay que dividir: {message}")
 			# message is too long, we divide
 			messagesQueue = self.__divideMessage(message)
