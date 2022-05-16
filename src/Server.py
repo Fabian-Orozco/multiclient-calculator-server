@@ -1,5 +1,3 @@
-from importlib.abc import TraversableResources
-from tracemalloc import stop
 from SimulatorTcp import SimulatorTcp
 import socket
 import threading
