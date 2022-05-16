@@ -47,4 +47,3 @@ char *sendReceiveMsg(char *msg)
         char *str = "father";
         return str;
     }
-}
