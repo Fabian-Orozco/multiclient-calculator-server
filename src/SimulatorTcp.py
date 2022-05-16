@@ -173,16 +173,17 @@ class SimulatorTcp(Communicator.Communicator):
 		# checks if message can be send directly
 		# max message length is 128 (buffer size)
 		if (len(message) >= self._BUFFER):
+			print(f"hay que dividir: {message}")
 			# message is too long, we divide
 			messagesQueue = self.__divideMessage(message)
 			i = 0
 			# iuterates through queue and sends every message
 			for i in messagesQueue:
-				# print(i)
 				if (self.__sendTcp(i) == False ):
 					return False
 			return True
 		else:
+			print(f"No hay que dividir: {message}")
 			# message is not too long, so we send it
 			return self.__sendTcp(message)
 
