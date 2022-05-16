@@ -9,6 +9,7 @@ from MessageFormatter import MessageFormatter
 import queue
 import ctypes
 from Dispatcher import Dispatcher
+import sys
 
 class Server:
 	def __init__(self, host, port):
@@ -151,5 +152,16 @@ class Server:
 		self.__waitForClient()
 
 if(__name__ == '__main__'):
-	server = Server('127.0.0.1', 8080)
+	# default
+	host = '127.0.0.1'
+	port = 8080
+
+	if (len(sys.argv) == 2):  # script | host
+		host = sys.argv[1]
+
+	elif(len(sys.argv) == 3):  # script | host | port
+		host = sys.argv[1]
+		port = int(sys.argv[2])
+	
+	server = Server(host, port)
 	server.run()
