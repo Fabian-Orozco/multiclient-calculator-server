@@ -29,7 +29,7 @@ class Communicator:
 	def _receiveMessage(self):
 		# we receive a message with a 128 bytes buffer
 		data, client_address = self._sock.recvfrom(self._BUFFER)
+		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Received message: "+ data + f" from {client_address}")
 		data = self.__cypher.decrypt(data.decode('utf-8'))
 		# testing 
-		printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Received message: "+ data + f" from {client_address}")
 		return data, client_address
