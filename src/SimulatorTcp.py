@@ -301,7 +301,8 @@ class SimulatorTcp(Communicator.Communicator):
 	# @return tthe received message
 	def __joinMessages(self, firstMessage):
 		self._sock.settimeout(None)
-		completeMessage = str(firstMessage).removesuffix("\"}")
+		completeMessage = str(firstMessage)[0:len(firstMessage)-2]
+
 		tempMessage = ""
 		while(True):
 			tempMessage = self.__receiveTcp()
