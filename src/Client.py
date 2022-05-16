@@ -47,16 +47,16 @@ class Client:
 				self.__argsAnalizer.printHelp()
 			else:
 				formatedMessage = self.__generateAction(input)
-				if (formatedMessage != None): 
+				if (formatedMessage != "Invalid_content"): 
 					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					self.__sendMessage(formatedMessage)
 					# Etapa 3
 					# serverResponse = self.__receiveMessage(formatedMessage)
 					# self.__verifyServerResponse()
 				else:
-					printErrors(f"Invalid input. Try again...")
+					printMsgTime(f"Try again...")
 		self.__disconnect()
-		self.__close(f"Program {TXT_BLUE}finished{TXT_RESET} with 'q'")  # enter 'q' to exit
+		self.__close(f"Program {TXT_YELLOW}finished{TXT_RESET} with 'q'")  # enter 'q' to exit
 ####################################################################################
 
 	## method that calls the class that analyzes arguments to analyze if their format is valid or not
@@ -83,7 +83,8 @@ class Client:
 		except EOFError as err:  # EOF (ctrl+d)
 			self.__disconnect()
 			self.__close(f'Program finished by {TXT_RED}signal EOF{TXT_RESET}')
-		return 'q'
+		except:  # any other
+			return 'q'
 
 ####################################################################################
 
@@ -112,8 +113,12 @@ class Client:
 		elif("-w" in userInput):
 			if (" " in userInput):
 				if (self.__validateData(content)):  # validates the mathematical operation		
-					return self.__msgFormatter.formatRequestWrite("true",content)
-		return None
+					print(self.__canWrite)
+					if (self.__canWrite == True):
+						return self.__msgFormatter.formatRequestWrite("true",content)
+					else:
+						printErrors(f"The user {TXT_YELLOW}{self.__username}{TXT_RESET} does not have write permissions.")
+		return "Invalid_content"
 
 ####################################################################################
 
@@ -207,7 +212,7 @@ class Client:
 # test code. To run: python Client.py
 def main():
 
-	client = Client('127.0.0.2', 8080)
+	client = Client('127.0.0.1', 8080)
 	client.run()
 
 if __name__ == "__main__":

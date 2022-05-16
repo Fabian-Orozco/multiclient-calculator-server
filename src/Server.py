@@ -1,5 +1,3 @@
-from importlib.abc import TraversableResources
-from tracemalloc import stop
 from SimulatorTcp import SimulatorTcp
 import socket
 import threading
@@ -107,8 +105,6 @@ class Server:
 				break
 			# send the message through the pipe
 			self.__sendPipe(request)
-			# testing
-			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} message to send through pipe: {request}")
 
 	def __sendPipe(self, message):
 		# Cargamos la libreria 
@@ -155,5 +151,5 @@ class Server:
 		self.__waitForClient()
 
 if(__name__ == '__main__'):
-	server = Server('127.0.0.2', 8080)
+	server = Server('127.0.0.1', 8080)
 	server.run()

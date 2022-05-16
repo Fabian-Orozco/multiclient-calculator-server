@@ -354,19 +354,3 @@ class SimulatorTcp(Communicator.Communicator):
 
 	def setTimeout(self, timeout):
 		self._sock.settimeout(timeout)
-
-if(__name__ == '__main__'):
-	format = MessageFormatter()
-	serverSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-	ip = '127.0.0.2'
-	port = 8080
-	serverSocket.bind((ip, port))
-	addresInfo = [ip, port]
-	communication = SimulatorTcp(serverSocket, ip, port)
-	if (communication.listen(8080)):
-		communication.setTimeout(10)
-		message = communication.receiveTcpMessage()
-		printMsgTime(f"{TXT_YELLOW}Complete message is {TXT_RESET}" + message)
-		#message = communication.receiveTcpMessage()
-		#printMsgTime(message)
-
