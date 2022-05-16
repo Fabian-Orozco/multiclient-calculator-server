@@ -1,10 +1,7 @@
 import json
-from operator import truediv
 import random
 import socket
 
-from cupshelpers import Printer
-from urllib3 import Retry
 import Communicator
 from datetime import datetime
 from MessageFormatter import MessageFormatter
@@ -69,7 +66,7 @@ class SimulatorTcp(Communicator.Communicator):
 			# send ack message with new port to connect
 			ackMesageAndPort = self.__formatter.formatAck(self.__seqValue, self.__ack, newPort)
 			self._sendMessage(ackMesageAndPort, self.__destination)
-			printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]} {TXT_RESET}")
+			printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET} to ip:{self.__destination[0]} | port:{self.__destination[1]}")
 			return True
 
 	## function to ask for connection
@@ -108,7 +105,7 @@ class SimulatorTcp(Communicator.Communicator):
 			self.__ack = confirmation['seq']+1
 
 			if (self.__accept()):
-				printMsgTime(f"{TXT_GREEN}Connection established to ip:{self.__destination[0]} | port:{self.__destination[1]}{TXT_RESET}")
+				printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET} to ip:{self.__destination[0]} | port:{self.__destination[1]}")
 				return True
 
 		return False		
@@ -369,7 +366,7 @@ if(__name__ == '__main__'):
 	if (communication.listen(8080)):
 		communication.setTimeout(10)
 		message = communication.receiveTcpMessage()
-		printMsgTime(f"{TXT_YELLOW}COmplete message is {TXT_RESET}" + message)
+		printMsgTime(f"{TXT_YELLOW}Complete message is {TXT_RESET}" + message)
 		#message = communication.receiveTcpMessage()
 		#printMsgTime(message)
 
