@@ -8,6 +8,7 @@ from Validator import Validator
 from MessageFormatter import MessageFormatter
 import json
 import socket
+import sys
 	
 
 ## class Client
@@ -113,7 +114,6 @@ class Client:
 		elif("-w" in userInput):
 			if (" " in userInput):
 				if (self.__validateData(content)):  # validates the mathematical operation		
-					print(self.__canWrite)
 					if (self.__canWrite == True):
 						return self.__msgFormatter.formatRequestWrite("true",content)
 					else:
@@ -211,8 +211,18 @@ class Client:
 
 # test code. To run: python Client.py
 def main():
+	# default
+	host = '127.0.0.1'
+	port = 8080
 
-	client = Client('127.0.0.1', 8080)
+	if (len(sys.argv) == 6):
+		host = sys.argv[5]
+
+	elif(len(sys.argv) == 7):
+		host = sys.argv[5]
+		port = int(sys.argv[6])
+	
+	client = Client(host, port)
 	client.run()
 
 if __name__ == "__main__":
