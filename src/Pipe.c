@@ -4,7 +4,7 @@
 #include <unistd.h> // read, write, pipe, _exit
 #include <string.h>
 
-// gcc -shared -W -o libPipe.so Pipe.c to compile
+// to compile: gcc -shared -W -o libPipe.so Pipe.c -fPIC 
 
 #define ReadEnd 0
 #define WriteEnd 1
