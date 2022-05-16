@@ -207,7 +207,7 @@ class Client:
 # test code. To run: python Client.py
 def main():
 
-	client = Client('127.0.0.2', 8080)
+	client = Client('127.0.0.1', 8080)
 	client.run()
 
 if __name__ == "__main__":
