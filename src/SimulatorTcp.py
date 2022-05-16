@@ -321,7 +321,7 @@ class SimulatorTcp(Communicator.Communicator):
 			message, otherAddress = self._receiveMessage()
 		except socket.timeout:
 			return "timeout"
-
+		self.__destination = otherAddress
 		# load data to generate ack
 		information = json.loads(message)
 
