@@ -3,6 +3,7 @@ from SimulatorTcp import SimulatorTcp
 import socket
 import threading
 import os
+from PipeManager import *
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -111,18 +112,7 @@ class Server:
 
 	def __sendPipe(self, message):
 		# Cargamos la libreria 
-		libPipe = ctypes.CDLL('./libPipe.so')
-		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p, )
-		# Definimos el tipo del retorno de la función factorial
-		libPipe.sendReceiveMsg.restype = ctypes.c_char_p
-
-		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p,)
-		# print(message.encode('utf-8'))
-		message = libPipe.sendReceiveMsg(message.encode('utf-8'))
-		if (message != b'father'):
-			self.__dispatcher.dispatch(message)
-			exit(0)
-
+		sendMsg(message)
 		return
 
 	def __clientLogin(self, communicator):
@@ -168,4 +158,13 @@ if(__name__ == '__main__'):
 	server = Server(host, port)
 	dispatcher = Dispatcher('127.0.0.2', 7070)
 
-	server.run()
+	pid = createChild()
+	if(pid ==  0):
+		closeWriteEnd()
+		dispatcher.dispatch()
+	elif(pid == -1):
+		printErrors("Fork failure")
+	else:
+		closeReadEnd()
+		server.run()
+		closeWriteEnd()
