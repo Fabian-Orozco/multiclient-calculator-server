@@ -112,8 +112,17 @@ class Server:
 	def __sendPipe(self, message):
 		# Cargamos la libreria 
 		libPipe = ctypes.CDLL('./libPipe.so')
-		libPipe.sendMsg.argtypes = (ctypes.c_char_p,)
-		libPipe.sendMsg(message.encode(encoding='UTF-8'))
+		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p, )
+		# Definimos el tipo del retorno de la función factorial
+		libPipe.sendReceiveMsg.restype = ctypes.c_char_p
+
+		libPipe.sendReceiveMsg.argtypes = (ctypes.c_char_p,)
+		# print(message.encode('utf-8'))
+		message = libPipe.sendReceiveMsg(message.encode('utf-8'))
+		if (message != b'father'):
+			self.__dispatcher.dispatch(message)
+			exit(0)
+
 		return
 
 	def __clientLogin(self, communicator):
@@ -159,12 +168,4 @@ if(__name__ == '__main__'):
 	server = Server(host, port)
 	dispatcher = Dispatcher('127.0.0.2', 7070)
 
-	libPipe = ctypes.CDLL('./libPipe.so')
-	libPipe.createChild.restype = ctypes.c_int
-	pid = libPipe.createChild()
-	if(pid ==  0):
-		dispatcher.dispatch()
-	elif(pid == -1):
-		print("Eror al crear el Pipe y el hijo")
-	else:
-		server.run()
+	server.run()
