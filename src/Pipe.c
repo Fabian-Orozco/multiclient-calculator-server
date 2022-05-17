@@ -1,3 +1,4 @@
+//Based on: https://opensource.com/article/19/4/interprocess-communication-linux-channels
 #include <stdio.h>
 #include <stdlib.h> 
 #include <unistd.h> 
@@ -29,31 +30,29 @@ int createChild()
 }
 
 /**
- * @brief Receive a Msg from the Pipe
+ * @brief Read from the Pipe
  *
  * @return char*
  */
 char *receiveMsg()
 {
-    char buf[512];
+    char buf[1024];
     int readBytes;
     close(pipeFDs[WriteEnd]);          // child reads, doesn't write
-    read(pipeFDs[ReadEnd], &buf, 512); // child reads from the Pipe[0]
-    close(pipeFDs[ReadEnd]);           // close the Pipe
+    read(pipeFDs[ReadEnd], &buf, 1024); // child reads from the Pipe[0]
     char *str = buf;
     return str; // Return the message to Python
 }
 
 /**
- * @brief Send msg to the Pipe
+ * @brief Write on the Pipe
  * 
- * @param msg 
+ * @param msg message to be sent to another process
  */
 void sendMsg(char *msg)
 {
-    char buf[512];           // Buffer of the msg
+    char buf[1024];           // Buffer of the msg
     close(pipeFDs[ReadEnd]); // parent writes, doesn't read
     strcpy(buf, msg);
-    write(pipeFDs[WriteEnd], buf, 512); // write the bytes to the pipe
-    close(pipeFDs[WriteEnd]);           // done writing: generate eof
+    write(pipeFDs[WriteEnd], buf, 1024); // write the bytes to the pipe
 }
