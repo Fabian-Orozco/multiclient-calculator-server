@@ -21,29 +21,29 @@ class Args_analizer:
 ####################################################################################
 	## Print argument help: required arguments and their meaning.
 	def printUsage(self):
-		separator = f"{TXT_BLUE} | {TXT_RESET}"
+		separator = f"{TXT_CYAN} | {TXT_RESET}"
 		print(f'''\
 ____________________________________________________
-usage: {TXT_BLUE}{sys.argv[0]} -u username -p password{TXT_RESET}
+usage: {TXT_CYAN}{sys.argv[0]} -u username -p password{TXT_RESET}
 
 required arguments:
-  {TXT_BLUE}-u{TXT_RESET}            flag before username
-  {TXT_BLUE}username{TXT_RESET}      username that will enter the server
-  {TXT_BLUE}-p{TXT_RESET}      	flag before password 
-  {TXT_BLUE}password{TXT_RESET}      user password''')
+  {TXT_CYAN}-u{TXT_RESET}            flag before username
+  {TXT_CYAN}username{TXT_RESET}      username that will enter the server
+  {TXT_CYAN}-p{TXT_RESET}      	flag before password 
+  {TXT_CYAN}password{TXT_RESET}      user password''')
 		self.printHelp()
 	
 ####################################################################################
 
 	## Print argument help: required arguments and their meaning.
 	def printHelp(self):
-		separator = f"{TXT_BLUE} | {TXT_RESET}"
+		separator = f"{TXT_CYAN} | {TXT_RESET}"
 		print(f'''\
 ____________________________________________________
 use flags for standard input:
-  {TXT_BLUE}-r [index]{TXT_RESET}    read the indicated operation by index
-  {TXT_BLUE}-r all{TXT_RESET}        read all operations on the database
-  {TXT_BLUE}-w [2+2]{TXT_RESET}      write (calculate and store) operation
+  {TXT_CYAN}-r [index]{TXT_RESET}    read the indicated operation by index
+  {TXT_CYAN}-r all{TXT_RESET}        read all operations on the database
+  {TXT_CYAN}-w [2+2]{TXT_RESET}      write (calculate and store) operation
 
 basic math operations:
 {separator} + {separator} - {separator} * {separator} sqrt(a) {separator} a^b {separator}
@@ -93,7 +93,7 @@ ____________________________________________________''')
 			and (self.__arguments[temp] not in self.__validArguments):
 			return self.__arguments[temp]
 		else:
-			print(f"{TXT_RED}ERROR: {TXT_BLUE}{arg}{TXT_RESET} not found")
+			print(f"{TXT_RED}ERROR: {TXT_CYAN}{arg}{TXT_RESET} not found")
 		return False
 
 ####################################################################################
