@@ -1,3 +1,5 @@
+from Utilities import *
+
 ## Class Validator
 # This class verifies if the input operation is valid or not
 class Validator:
@@ -102,7 +104,7 @@ class Validator:
                         openParenthesis = openParenthesis + 1   # If is well typed jumps to the space after the open parenthesis
                         i = i + 5
                     else:
-                        print("La funcion sqrt() no fue escrita correctamente")
+                        printErrors("The sqrt() function was not typed properly")
                         return False                            # If the sqrt function is wrong typed returns false
                 else:
                     found = char in self.VALID_ENTRIES          # Validates that the current character is a valid one
@@ -134,23 +136,23 @@ class Validator:
 
                         i = i + 1
                     else:                           # If the currect character is invalid return False
-                        print("Se encontro caracteres invalidos en la operacion.\nLos caracteres validos son: +, -, *, /, a^b y sqrt(a)")
+                        printErrors("Invalid characters were found in the operation.\nValid characters are: +, -, *, /, a^b and sqrt(a)")
                         return False
             else:
                 return False
 
         if (i < 2):
-            print("Por favor, ingrese una operacion")
+            printErrors("Please, enter an operation")
             return False
         else:
             if(operationFound == False):               # There is at least one valid operation
-                print("No se encontraron operaciones.")       
+                printErrors("No operations were found.")       
                 return False
 
             if(openParenthesis == closeParenthesis):   # Verifies that the number of open and close parenthesis are equal and return true if they are
                 return True
             else:
-                print("La cantidad de parentesis abiertos y cerrados no coinciden")
+                printErrors("The number of open and closed parentheses do not match")
                 return False
 
 
