@@ -10,7 +10,7 @@ En este repositorio desarrollaremos el proyecto integrador de Redes de Comunicac
 
 ## Autores
 
-Fabian Orozco Chavez - B95690
+Fabián Orozco Chaves - B95690
 Daniel Escobar Giraldo - C02748
 Fabián Calvo Alcazar - B91399
 Marco Rodríguez Espinoza - B96632
