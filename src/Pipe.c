@@ -30,6 +30,23 @@ int createChild()
 }
 
 /**
+ * @brief close the pipe write side
+ * 
+ */
+void closeWriteEnd(){
+    close(pipeFDs[WriteEnd]);
+}
+
+/**
+ * @brief close the pipe read side
+ * 
+ */
+void closeReadEnd(){
+    close(pipeFDs[ReadEnd]);
+}
+
+
+/**
  * @brief Read from the Pipe
  *
  * @return char*
@@ -38,8 +55,9 @@ char *receiveMsg()
 {
     char buf[1024];
     int readBytes;
-    close(pipeFDs[WriteEnd]);          // child reads, doesn't write
+    //close(pipeFDs[WriteEnd]);          // child reads, doesn't write
     read(pipeFDs[ReadEnd], &buf, 1024); // child reads from the Pipe[0]
+    //close(pipeFDs[ReadEnd]);
     char *str = buf;
     return str; // Return the message to Python
 }
@@ -52,7 +70,7 @@ char *receiveMsg()
 void sendMsg(char *msg)
 {
     char buf[1024];           // Buffer of the msg
-    close(pipeFDs[ReadEnd]); // parent writes, doesn't read
+    //close(pipeFDs[ReadEnd]); // parent writes, doesn't read
     strcpy(buf, msg);
     write(pipeFDs[WriteEnd], buf, 1024); // write the bytes to the pipe
 }

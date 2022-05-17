@@ -3,6 +3,7 @@ from SimulatorTcp import SimulatorTcp
 import socket
 import threading
 import os
+from PipeManager import *
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -111,9 +112,7 @@ class Server:
 
 	def __sendPipe(self, message):
 		# Cargamos la libreria 
-		libPipe = ctypes.CDLL('./libPipe.so')
-		libPipe.sendMsg.argtypes = (ctypes.c_char_p,)
-		libPipe.sendMsg(message.encode(encoding='UTF-8'))
+		sendMsg(message)
 		return
 
 	def __clientLogin(self, communicator):
@@ -159,12 +158,13 @@ if(__name__ == '__main__'):
 	server = Server(host, port)
 	dispatcher = Dispatcher('127.0.0.2', 7070)
 
-	libPipe = ctypes.CDLL('./libPipe.so')
-	libPipe.createChild.restype = ctypes.c_int
-	pid = libPipe.createChild()
+	pid = creteChild()
 	if(pid ==  0):
+		closeWriteEnd()
 		dispatcher.dispatch()
 	elif(pid == -1):
 		print("Eror al crear el Pipe y el hijo")
 	else:
+		closeReadEnd()
 		server.run()
+		closeWriteEnd()
