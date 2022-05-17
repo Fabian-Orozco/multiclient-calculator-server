@@ -76,7 +76,7 @@ class Client:
 	# @return the value entered by the user
 	def showInterface(self):
 		try:
-			return input(f"{TXT_BLUE}>{TXT_RESET} Enter the action to perform: ")
+			return input(f"{TXT_CYAN}>{TXT_RESET} Enter the action to perform: ")
 		except KeyboardInterrupt as err:  # SIGINT (ctrl+c)
 			self.__disconnect()
 			self.__close(f'Program finished by {TXT_RED}signal SIGINT{TXT_RESET}')
