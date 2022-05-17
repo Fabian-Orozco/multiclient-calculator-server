@@ -1,8 +1,5 @@
-<<<<<<< HEAD
-=======
 import ctypes
 from PipeManager import *
->>>>>>> markz
 from SimulatorTcp import SimulatorTcp
 from Utilities import *
 import queue
