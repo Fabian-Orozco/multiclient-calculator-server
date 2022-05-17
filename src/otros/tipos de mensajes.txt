@@ -1,37 +1,37 @@
 1)  Handshake:
-{"type”:”syn”,"seq”:x}  1.
-{"type”:”ack”,"ack”:x+1,”seq”:y}  2.
-{"type”:”ack”,"ack”:y+1,”seq”:x+1}
-{"type”:”ack”,"ack”:x+2,”seq”:y+1, "port”:4040} 3.
+{"type":"syn","seq":x}  1.
+{"type":"ack","ack":x+1,"seq":y}  2.
+{"type":"ack","ack":y+1,"seq":x+1}
+{"type":"ack","ack":x+2,"seq":y+1, "port":4040} 3.
 
 
 
 2) recoleccion a cálculo
-{"seq”:225,"type":"request","fin":true,"request":"write","operation":"2+4+5+8+5+7"}       4.
-{"seq”:226,"type":"request","fin":true,"request":"read","index":2}                   5.
-{"seq”:227,"type":"request","fin":true,"request":"read","index":-1} 
-el -1 es lo mismo que "all” en el request de lectura
+{"seq":225,"type":"request","fin":true,"request":"write","operation":"2+4+5+8+5+7"}       4.
+{"seq":226,"type":"request","fin":true,"request":"read","index":2}                   5.
+{"seq":227,"type":"request","fin":true,"request":"read","index":-1} 
+el -1 es lo mismo que "all" en el request de lectura
 
 
 
 3) cálculo a recolección
 Ejemplo de mensaje de capa de cálculo a capa de recolección:
-{"seq”:228,"type":"request","fin":true,"request":"write","result":31,"operation":"2+4+5+8+5+7"}   6
+{"seq":228,"type":"request","fin":true,"request":"write","result":31,"operation":"2+4+5+8+5+7"}   6
 error solo si el indice está fuera del rango
-{"seq”:229,"type":"request","fin":true,"request":"read","index":"2",”error”:false,”result”:31,”operation”:"1+1+1+1+1+1+1+1+1+1"}
+{"seq":229,"type":"request","fin":true,"request":"read","index":"2","error":false,"result":31,"operation":"1+1+1+1+1+1+1+1+1+1"}
 
 4) desconexión
 {"seq":8,"type":"disconnect"}                                8
 
 
 5) Error
-{"seq":2,"type”:”error”,”message”:”example”}                     9
+{"seq":2,"type":"error","message":"example"}                     9
 
 
 
 6) Login
 {"seq":1,"type":"login","fin":true,"username":"u","password":"p"}          10 
-{"seq":13,"type":"login","fin":true,"username":"user","password":"pass","validated":true, "canWrite”:true}                                            11
+{"seq":13,"type":"login","fin":true,"username":"user","password":"pass","validated":true, "canWrite":true}                                            11
 
 datos en común
 seq , int
