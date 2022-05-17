@@ -1,7 +1,7 @@
-//Based on: https://opensource.com/article/19/4/interprocess-communication-linux-channels
+// Based on: https://opensource.com/article/19/4/interprocess-communication-linux-channels
 #include <stdio.h>
-#include <stdlib.h> 
-#include <unistd.h> 
+#include <stdlib.h>
+#include <unistd.h>
 #include <string.h>
 
 int pipeFDs[2]; // Create 2 File descriptors for the Pipe
@@ -31,20 +31,21 @@ int createChild()
 
 /**
  * @brief close the pipe write side
- * 
+ *
  */
-void closeWriteEnd(){
+void closeWriteEnd()
+{
     close(pipeFDs[WriteEnd]);
 }
 
 /**
  * @brief close the pipe read side
- * 
+ *
  */
-void closeReadEnd(){
+void closeReadEnd()
+{
     close(pipeFDs[ReadEnd]);
 }
-
 
 /**
  * @brief Read from the Pipe
@@ -55,22 +56,19 @@ char *receiveMsg()
 {
     char buf[1024];
     int readBytes;
-    //close(pipeFDs[WriteEnd]);          // child reads, doesn't write
     read(pipeFDs[ReadEnd], &buf, 1024); // child reads from the Pipe[0]
-    //close(pipeFDs[ReadEnd]);
     char *str = buf;
     return str; // Return the message to Python
 }
 
 /**
  * @brief Write on the Pipe
- * 
+ *
  * @param msg message to be sent to another process
  */
 void sendMsg(char *msg)
 {
-    char buf[1024];           // Buffer of the msg
-    //close(pipeFDs[ReadEnd]); // parent writes, doesn't read
+    char buf[1024]; // Buffer of the msg
     strcpy(buf, msg);
     write(pipeFDs[WriteEnd], buf, 1024); // write the bytes to the pipe
 }

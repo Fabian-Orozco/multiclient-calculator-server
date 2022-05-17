@@ -2,7 +2,7 @@ import ctypes
 
 libPipe = ctypes.CDLL('./libPipe.so')
 
-def creteChild():
+def createChild():
     libPipe.createChild.restype = ctypes.c_int
     pid = libPipe.createChild()
     return pid

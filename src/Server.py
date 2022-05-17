@@ -158,12 +158,12 @@ if(__name__ == '__main__'):
 	server = Server(host, port)
 	dispatcher = Dispatcher('127.0.0.2', 7070)
 
-	pid = creteChild()
+	pid = createChild()
 	if(pid ==  0):
 		closeWriteEnd()
 		dispatcher.dispatch()
 	elif(pid == -1):
-		print("Eror al crear el Pipe y el hijo")
+		printErrors("Fork failure")
 	else:
 		closeReadEnd()
 		server.run()
