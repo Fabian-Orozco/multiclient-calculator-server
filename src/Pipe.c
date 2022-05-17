@@ -1,50 +1,58 @@
-#include <sys/wait.h> // wait
+//Based on: https://opensource.com/article/19/4/interprocess-communication-linux-channels
 #include <stdio.h>
-#include <stdlib.h> // exit functions
-#include <unistd.h> // read, write, pipe, _exit
+#include <stdlib.h> 
+#include <unistd.h> 
 #include <string.h>
 
-// to compile: gcc -shared -W -o libPipe.so Pipe.c -fPIC 
+int pipeFDs[2]; // Create 2 File descriptors for the Pipe
+
+// to compile: gcc -shared -W -o libPipe.so Pipe.c -fPIC
 
 #define ReadEnd 0
 #define WriteEnd 1
 
 /**
- * @brief Send a msg to new process.
+ * @brief Create the a child process
  *
- * This method create a Pipe and send message to a new child process
+ * @return -1 on failure, 0 the child and one int the father
+ */
+int createChild()
+{
+    if (pipe(pipeFDs) < 0) // System call to create the Pipe
+        return -1;         // Failure case
+
+    int cpid;
+    if ((cpid = fork()) >= 0) // create a child process
+    {
+        return cpid;
+    }
+    return -1; // Failure case
+}
+
+/**
+ * @brief Read from the Pipe
  *
- * @param msg
  * @return char*
  */
-char *sendReceiveMsg(char *msg)
+char *receiveMsg()
 {
-    int pipeFDs[2];            // Create 2 File descriptors for the Pipe
-    pipe(pipeFDs);             // System call to create the Pipe
-    char buf[512];            // Buffer to riceibe the msg
+    char buf[1024];
     int readBytes;
+    close(pipeFDs[WriteEnd]);          // child reads, doesn't write
+    read(pipeFDs[ReadEnd], &buf, 1024); // child reads from the Pipe[0]
+    char *str = buf;
+    return str; // Return the message to Python
+}
 
-    pid_t cpid = fork(); // fork a child process
-    if (cpid < 0)
-        exit(0); // check for failure
-
-    if (0 == cpid) // child process work
-    {
-        close(pipeFDs[WriteEnd]); // child reads, doesn't write
-        
-        read(pipeFDs[ReadEnd], &buf, 512);// child reads from the Pipe[0]
-        close(pipeFDs[ReadEnd]); // close the Pipe
-        char *str = buf;
-        return str; // Return the message to Python
-    }
-
-    else // father process work
-    {
-        close(pipeFDs[ReadEnd]); // parent writes, doesn't read
-        strcpy(buf, msg);
-        write(pipeFDs[WriteEnd], buf, 512); // write the bytes to the pipe
-        close(pipeFDs[WriteEnd]);                   // done writing: generate eof
-        char *str = "father";
-        return str;
-    }
+/**
+ * @brief Write on the Pipe
+ * 
+ * @param msg message to be sent to another process
+ */
+void sendMsg(char *msg)
+{
+    char buf[1024];           // Buffer of the msg
+    close(pipeFDs[ReadEnd]); // parent writes, doesn't read
+    strcpy(buf, msg);
+    write(pipeFDs[WriteEnd], buf, 1024); // write the bytes to the pipe
 }
