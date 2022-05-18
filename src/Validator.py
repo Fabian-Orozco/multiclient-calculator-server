@@ -3,8 +3,8 @@ from Utilities import *
 ## Class Validator
 # This class verifies if the input operation is valid or not
 class Validator:
-    VALID_ENTRIES = {"(", ")", "+", "-", "*", "/", "sqrt", "^", "1","2","3","4","5","6","7","8","9","0"}
-    VALID_SYMBOLS = {"(", ")","+", "*", "/", "sqrt", "^",}
+    VALID_ENTRIES = {".","(", ")", "+", "-", "*", "/", "sqrt", "^", "1","2","3","4","5","6","7","8","9","0"}
+    VALID_SYMBOLS = {".","(", ")","+", "*", "/", "sqrt", "^",}
     VALID_NUMBERS = {"1","2","3","4","5","6","7","8","9","0"}
 
     ## Validates if the sqrt function is well typed
