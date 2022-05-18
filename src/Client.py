@@ -109,7 +109,8 @@ class Client:
 		elif ("-r" in userInput):  		# read action
 			if (" " in userInput):		# read + index
 				# Tcp takes care of dividing. "end" is assumed to be true
-				return self.__msgFormatter.formatRequestRead("true", int(content))
+				if (content.isnumeric()):
+					return self.__msgFormatter.formatRequestRead("true", int(content))
 
 		elif("-w" in userInput):
 			if (" " in userInput):
