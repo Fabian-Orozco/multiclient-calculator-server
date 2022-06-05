@@ -1,5 +1,6 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
+from operator import truediv
 from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
@@ -50,8 +51,8 @@ class Client:
 			else:
 				formatedMessage = self.__generateAction(input)
 				if (formatedMessage != "Invalid_content"): 
-					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					self.__sendMessage(formatedMessage)
+					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					# Etapa 3
 					# serverResponse = self.__receiveMessage(formatedMessage)
 					# self.__verifyServerResponse()
@@ -105,19 +106,19 @@ class Client:
 
 		if (userInput == "-r"):  # read [] => all
 				# Tcp takes care of dividing. "end" is assumed to be true
-				return self.__msgFormatter.formatRequestRead("true", -1) 	# -r
+				return self.__msgFormatter.formatRequestRead(-1) 	# -r
 		
 		elif ("-r" in userInput):  		# read action
 			if (" " in userInput):		# read + index
 				# Tcp takes care of dividing. "end" is assumed to be true
 				if (content.isnumeric()):
-					return self.__msgFormatter.formatRequestRead("true", int(content))
+					return self.__msgFormatter.formatRequestRead(int(content))
 
 		elif("-w" in userInput):
 			if (" " in userInput):
 				if (self.__validateData(content)):  # validates the mathematical operation		
 					if (self.__canWrite == True):
-						return self.__msgFormatter.formatRequestWrite("true",content)
+						return self.__msgFormatter.formatRequestWrite(content)
 					else:
 						printErrors(f"The user {TXT_YELLOW}{self.__username}{TXT_RESET} does not have write permissions.")
 		return "Invalid_content"
@@ -127,7 +128,13 @@ class Client:
 	##
 	#
 	def __connect(self):
-		self.__comm.connect((self.serverHost, self.serverPort))
+		while(True):
+			try:
+				self.__comm.connect((self.serverHost, self.serverPort))
+				break
+			except:
+				printErrors("Server not found. Retrying connection.")
+				sleep(5)
 		# to give the server time to establish the connection before logging in
 		sleep(1)
 
@@ -135,7 +142,7 @@ class Client:
 
 	def __disconnect(self):
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
-		self.__comm.sendTcpMessage(disconnectMessage)
+		self.__sendMessage(disconnectMessage)
 	
 ####################################################################################
 
@@ -166,7 +173,11 @@ class Client:
 	#
 	def __sendMessage(self, message):
 		# Invokes Simulator_Tcp to send a message
-		self.__comm.send(message.encode('UTF-8')) 
+		try:
+			self.__comm.send(message.encode('UTF-8'))
+		except:
+			self.__close(f"Program {TXT_RED}finished{TXT_RESET} server did not respond.")
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 
 ####################################################################################
 
@@ -178,6 +189,7 @@ class Client:
 		message = ""
 		try:
 			message = self.__comm.recv(128)
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
 			return message.decode('UTF-8')
 		except socket.timeout:
 			# timout reached
@@ -231,4 +243,4 @@ def main():
 
 if __name__ == "__main__":
   	main()
-####################################################################################
+####################################################################################\
