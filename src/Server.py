@@ -80,7 +80,7 @@ class Server:
 			return
 
 		# handle request returns a disconnect message when finished
-		disconnetcMessage = self.__handdleRequest(connection)
+		disconnetcMessage = self.__handleRequest(connection)
 
 		# disconnect message can be a timeout message
 		if (disconnetcMessage == "timeout"):
@@ -150,7 +150,7 @@ class Server:
 		message = self.__formatter.formatLogin(loginInfo['username'], loginInfo['password'],  str(userAccepted).lower(), str(canWrite).lower())
 
 		# sends the validation message to client
-		communicator.send(message)
+		self.__sendMsg(communicator, message)
 
 		if (userAccepted):
 			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_GREEN}accepted{TXT_RESET}")
@@ -162,15 +162,18 @@ class Server:
 			return (False, loginInfo['username'])
 
 	def __recvMsg(self, sock, timeout):
-		# maximum timout is 5 minutes
+		# maximum timeout is 5 minutes
 		sock.settimeout(timeout)
 		message = ""
 		try:
 			message = sock.recv(128)
-			return message
+			return message.decode('UTF-8')
 		except socket.timeout:
 			# timout reached
 			return "timeout"
+
+	def __sendMsg(self, sock, message):
+		sock.send(message.encode('UTF-8'))
 
 	def __consumeRequests(self):
 		request = ""
