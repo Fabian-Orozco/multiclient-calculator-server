@@ -166,7 +166,7 @@ class Server:
 		sock.settimeout(timeout)
 		message = ""
 		try:
-			message = sock.recv(128)
+			message = sock.recv(4096)
 			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
 			return message.decode('UTF-8')
 		except socket.timeout:
