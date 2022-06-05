@@ -3,7 +3,6 @@
 from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
-from SimulatorTcp import SimulatorTcp
 from Validator import Validator
 from MessageFormatter import MessageFormatter
 import json
@@ -19,7 +18,9 @@ class Client:
 	# initializes the attributes
 	def __init__(self, port, host):
 		self.__argsAnalizer = Args_analizer()
-		self.__comm = SimulatorTcp(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), port, host)
+		self.__comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.serverPort = port
+		self.serverHost = host
 		self.__validator = Validator()
 		self.__msgFormatter = MessageFormatter()
 		self.__username = ""
@@ -126,8 +127,7 @@ class Client:
 	##
 	#
 	def __connect(self):
-		if(self.__comm.connect() == False):
-			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
+		self.__comm.connect((self.serverHost, self.serverPort))
 		# to give the server time to establish the connection before logging in
 		sleep(1)
 
@@ -146,8 +146,7 @@ class Client:
 		message = self.__msgFormatter.formatLogin(self.__username, self.__password)
 		printMsgTime(f"{TXT_YELLOW}Logging in as{TXT_RESET}: {self.__username}")
 		self.__sendMessage(message)
-		self.__comm.setTimeout(10)
-		response = self.__receiveMessage()
+		response = self.__receiveMessage(20)
 		if (response == "timeout"):
 			self.__close(f"Program finished: {TXT_RED}the server did not respond.{TXT_RESET}")
 		json_response = json.loads(response)
@@ -167,18 +166,22 @@ class Client:
 	#
 	def __sendMessage(self, message):
 		# Invokes Simulator_Tcp to send a message
-		if (self.__comm.sendTcpMessage(message) == False):
-			printErrors(f"{TXT_RED}Server did not respond.{TXT_RESET}")
-			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
+		self.__comm.send(message.encode('UTF-8')) 
 
 ####################################################################################
 
 	##
 	#
-	def __receiveMessage(self):
-		# Invokes Simulator_Tcp to receive a message
-		message = self.__comm.receiveTcpMessage()
-		return message
+	def __receiveMessage(self, timeout):
+		# maximum timeout is 5 minutes
+		self.__comm.settimeout(timeout)
+		message = ""
+		try:
+			message = self.__comm.recv(128)
+			return message.decode('UTF-8')
+		except socket.timeout:
+			# timout reached
+			return "timeout"
 
 ####################################################################################
 
@@ -223,7 +226,7 @@ def main():
 		host = sys.argv[5]
 		port = int(sys.argv[6])
 	
-	client = Client(host, port)
+	client = Client(port, host)
 	client.run()
 
 if __name__ == "__main__":
