@@ -1,5 +1,3 @@
-from base64 import encode
-from SimulatorTcp import SimulatorTcp
 import socket
 import threading
 import os
@@ -9,7 +7,6 @@ from Authenticator import Authenticator
 import json
 from MessageFormatter import MessageFormatter
 import queue
-import ctypes
 from Dispatcher import Dispatcher
 import sys
 
@@ -18,9 +15,8 @@ class Server:
 		self.__host = host            # server port
 		self.__port = port            # server ip
 		self.__maxTimeOut = 300       # max timout of client inactivity in seconds
-		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.__welcomingSocket.bind((self.__host, self.__port))
-		self.tcpCommunication = SimulatorTcp(self.__welcomingSocket, self.__host, self.__port)
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
 		self.__requestsQueue = queue.Queue()
@@ -37,20 +33,27 @@ class Server:
 		consumerThread.daemon = True
 		consumerThread.start()
 
-		newPort = self.__port
 		# waits for client connection
 		# creates a thread for each client
 		try:
 			while (True):
 				try:
-					newPort += 1
-					if (self.tcpCommunication.listen(newPort)):
-						# creates thread to manage the connection
-						thread = threading.Thread(target = self.__handleConnection,
-							args = (newPort, self.tcpCommunication.getSeqAck(), \
-							self.tcpCommunication.getDestination()))
-						thread.daemon = True
-						thread.start()
+					# welcoming socket listening for new connections
+					self.__welcomingSocket.listen()
+
+					# server accepts the connection
+					newSocket, address = self.__welcomingSocket.accept()
+					printMsgTime(f"{TXT_YELLOW}Connecting to ip:{address[0]} | port:{address[1]}{TXT_RESET}")
+
+					# creates thread to manage the connection
+					# the thread receives the socket of the new connection
+					thread = threading.Thread(target = self.__handleConnection, args = (newSocket))
+
+					# deamon thread so it destoys itself when it has finished working
+					thread.daemon = True
+
+					# thread starts to work
+					thread.start()
 				except KeyboardInterrupt or OSError or EOFError:
 					break
 		finally:
@@ -58,27 +61,48 @@ class Server:
 			self.__requestsQueue.put("stop")
 			self.shutDownServer()
 
-	def __handleConnection(self, port, values, destination):
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind((self.__host, port))
-		communicator = SimulatorTcp(sock, destination[0], destination[1])
-		# setting values to continue communication
-		communicator.setSeqAck(values)
+	def __handleConnection(self, connection):
+		# authentication process
+		loginAccepted, user = self.__clientLogin(connection)
 
-		loginAccepted, user = self.__clientLogin(communicator)
+		# if not accepted the user
 		if(loginAccepted == False):
 			if (user == "timeout"):
 				printMsgTime(f"{TXT_RED}Login timedout{TXT_RESET}")
 			printMsgTime(f"{TXT_RED}Connection finished{TXT_RESET}")
-			communicator.close()
+			connection.close()
 			return
 
-		action = self.__handleRequest(communicator)
-		if (action == "timeout"):
+		disconnetcMessage = self.__handleRequest(connection)
+		if (disconnetcMessage == "timeout"):
 			printMsgTime(f"User \"{user}\" {TXT_RED} reached timeout{TXT_RESET}")
 
+		# end of the connection
 		printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
-		communicator.close()
+		connection.close()
+
+
+	# def __handleConnection(self, port, values, destination):
+	# 	sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	# 	sock.bind((self.__host, port))
+	# 	communicator = SimulatorTcp(sock, destination[0], destination[1])
+	# 	# setting values to continue communication
+	# 	communicator.setSeqAck(values)
+
+	# 	loginAccepted, user = self.__clientLogin(communicator)
+	# 	if(loginAccepted == False):
+	# 		if (user == "timeout"):
+	# 			printMsgTime(f"{TXT_RED}Login timedout{TXT_RESET}")
+	# 		printMsgTime(f"{TXT_RED}Connection finished{TXT_RESET}")
+	# 		communicator.close()
+	# 		return
+
+	# 	action = self.__handleRequest(communicator)
+	# 	if (action == "timeout"):
+	# 		printMsgTime(f"User \"{user}\" {TXT_RED} reached timeout{TXT_RESET}")
+
+	# 	printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
+	# 	communicator.close()
 
 	def __handleRequest(self, communicator):
 		communicator.setTimeout(self.__maxTimeOut)
