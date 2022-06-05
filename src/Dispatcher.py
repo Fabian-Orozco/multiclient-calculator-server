@@ -7,7 +7,7 @@ import socket
 
 class Dispatcher:
 	def __init__(self, host, port):
-		print("Constructor")
+		self.x = 9
 
 	def dispatch(self):
 		try:
