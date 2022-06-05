@@ -20,7 +20,6 @@ class Server:
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
 		self.__requestsQueue = queue.Queue()
-		self.__dispatcher = Dispatcher('127.0.0.2', 7070)
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
@@ -97,6 +96,7 @@ class Server:
 		# if timeout reached we return and close connection
 		if (messageReceived == "timeout"):
 			return "timeout"
+		printMsgTime(f"{TXT_RED}Request{TXT_RESET} message received: {messageReceived}")
 
 		# loads message into json object
 		jsonMessage = json.loads(messageReceived)
@@ -167,12 +167,14 @@ class Server:
 		message = ""
 		try:
 			message = sock.recv(128)
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
 			return message.decode('UTF-8')
 		except socket.timeout:
 			# timout reached
 			return "timeout"
 
 	def __sendMsg(self, sock, message):
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 		sock.send(message.encode('UTF-8'))
 
 	def __consumeRequests(self):
