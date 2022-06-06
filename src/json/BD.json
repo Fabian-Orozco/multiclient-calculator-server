@@ -1,9 +1,1 @@
-{
-  "operations": [
-    {
-      "index": 0,
-      "operation": "1+2",
-      "result": "3"
-    }
-  ]
-}
+{"operations": [{"index": 0, "operation": "1+2", "result": "3"}]}
