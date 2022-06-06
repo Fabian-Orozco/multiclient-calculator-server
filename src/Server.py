@@ -1,5 +1,3 @@
-from base64 import encode
-from SimulatorTcp import SimulatorTcp
 import socket
 import threading
 import os
@@ -9,7 +7,6 @@ from Authenticator import Authenticator
 import json
 from MessageFormatter import MessageFormatter
 import queue
-import ctypes
 from Dispatcher import Dispatcher
 import sys
 
@@ -18,13 +15,11 @@ class Server:
 		self.__host = host            # server port
 		self.__port = port            # server ip
 		self.__maxTimeOut = 300       # max timout of client inactivity in seconds
-		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 		self.__welcomingSocket.bind((self.__host, self.__port))
-		self.tcpCommunication = SimulatorTcp(self.__welcomingSocket, self.__host, self.__port)
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
 		self.__requestsQueue = queue.Queue()
-		self.__dispatcher = Dispatcher('127.0.0.2', 7070)
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
@@ -37,20 +32,27 @@ class Server:
 		consumerThread.daemon = True
 		consumerThread.start()
 
-		newPort = self.__port
 		# waits for client connection
 		# creates a thread for each client
 		try:
 			while (True):
 				try:
-					newPort += 1
-					if (self.tcpCommunication.listen(newPort)):
-						# creates thread to manage the connection
-						thread = threading.Thread(target = self.__handleConnection,
-							args = (newPort, self.tcpCommunication.getSeqAck(), \
-							self.tcpCommunication.getDestination()))
-						thread.daemon = True
-						thread.start()
+					# welcoming socket listening for new connections
+					self.__welcomingSocket.listen()
+
+					# server accepts the connection
+					newSocket, address = self.__welcomingSocket.accept()
+					printMsgTime(f"{TXT_YELLOW}Connecting to ip:{address[0]} | port:{address[1]}{TXT_RESET}")
+
+					# creates thread to manage the connection
+					# the thread receives the socket of the new connection
+					thread = threading.Thread(target = self.__handleConnection, args = (newSocket, address))
+
+					# deamon thread so it destoys itself when it has finished working
+					thread.daemon = True
+
+					# thread starts to work
+					thread.start()
 				except KeyboardInterrupt or OSError or EOFError:
 					break
 		finally:
@@ -58,44 +60,122 @@ class Server:
 			self.__requestsQueue.put("stop")
 			self.shutDownServer()
 
-	def __handleConnection(self, port, values, destination):
-		sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		sock.bind((self.__host, port))
-		communicator = SimulatorTcp(sock, destination[0], destination[1])
-		# setting values to continue communication
-		communicator.setSeqAck(values)
+	def __handleConnection(self, connection, address):
+		# connection established with client
+		printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET} to ip:{address[0]} | port:{address[1]}")
 
-		loginAccepted, user = self.__clientLogin(communicator)
+		# authentication process
+		loginAccepted, user = self.__clientLogin(connection)
+
+		# if not accepted the user
 		if(loginAccepted == False):
+			# the we print error messages
 			if (user == "timeout"):
 				printMsgTime(f"{TXT_RED}Login timedout{TXT_RESET}")
 			printMsgTime(f"{TXT_RED}Connection finished{TXT_RESET}")
-			communicator.close()
+
+			# closes connection
+			connection.close()
 			return
 
-		action = self.__handleRequest(communicator)
-		if (action == "timeout"):
+		# handle request returns a disconnect message when finished
+		disconnetcMessage = self.__handleRequest(connection)
+
+		# disconnect message can be a timeout message
+		if (disconnetcMessage == "timeout"):
 			printMsgTime(f"User \"{user}\" {TXT_RED} reached timeout{TXT_RESET}")
 
+		# end of the connection
 		printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
-		communicator.close()
+		connection.close()
 
 	def __handleRequest(self, communicator):
-		communicator.setTimeout(self.__maxTimeOut)
-		messageReceived = communicator.receiveTcpMessage()
+		# receives request message from client with a 5 minutes timeout
+		messageReceived = self.__recvMsg(communicator, self.__maxTimeOut)
+		
+		# if timeout reached we return and close connection
 		if (messageReceived == "timeout"):
-			return messageReceived
+			return "timeout"
+		printMsgTime(f"{TXT_RED}Request{TXT_RESET} message received: {messageReceived}")
+
+		# loads message into json object
 		jsonMessage = json.loads(messageReceived)
 
-
+		# keeps receiving if it doesn't receive en disconnection request
 		while(jsonMessage["type"] != "disconnect"):
+			# puts in queue the received message
 			self.__requestsQueue.put(messageReceived)
-			communicator.setTimeout(self.__maxTimeOut)
-			messageReceived = communicator.receiveTcpMessage()
+
+			# receives request message from client with a 5 minutes timeout
+			messageReceived = self.__recvMsg(communicator, self.__maxTimeOut)
+
+			# if timeout reached we return and close connection
 			if (messageReceived == "timeout"):
 				return messageReceived
+			
+			# loads message into json object
 			jsonMessage = json.loads(messageReceived)
+
+		# if while is finished, it means we have to clesthe connection
 		return "disconnect"
+
+	def __sendPipe(self, message):
+		# Cargamos la libreria 
+		sendMsg(message)
+		return
+
+	def __clientLogin(self, communicator):
+		# control variables
+		canWrite = False
+		userAccepted = False
+
+		# receives login message from client with 20 seconds timeout
+		message = self.__recvMsg(communicator, 20)
+
+		if (message == "timeout"):
+			# timeout reached, we return timeout message
+			return (False,"timeout")
+
+		# loads into json oject the message
+		loginInfo = json.loads(message)
+
+		# authenticator checks if the user and password is valid
+		userAccepted = self.__authenticator.checkLog(loginInfo['username'], loginInfo['password'])
+		
+		# checks if user can write
+		if (userAccepted):
+			canWrite = self.__authenticator.userCanWrite()
+
+		# create message of validation which will be sent to client
+		message = self.__formatter.formatLogin(loginInfo['username'], loginInfo['password'],  str(userAccepted).lower(), str(canWrite).lower())
+
+		# sends the validation message to client
+		self.__sendMsg(communicator, message)
+
+		if (userAccepted):
+			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_GREEN}accepted{TXT_RESET}")
+			# return true because is a valid username. Also i returns the name of the user
+			return (True, loginInfo['username'])
+		else:
+			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_RED}not accepted{TXT_RESET}")
+			# return false because is a valid username. Also i returns the name of the user
+			return (False, loginInfo['username'])
+
+	def __recvMsg(self, sock, timeout):
+		# maximum timeout is 5 minutes
+		sock.settimeout(timeout)
+		message = ""
+		try:
+			message = sock.recv(4096)
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
+			return message.decode('UTF-8')
+		except socket.timeout:
+			# timout reached
+			return "timeout"
+
+	def __sendMsg(self, sock, message):
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
+		sock.send(message.encode('UTF-8'))
 
 	def __consumeRequests(self):
 		request = ""
@@ -110,36 +190,9 @@ class Server:
 			# send the message through the pipe
 			self.__sendPipe(request)
 
-	def __sendPipe(self, message):
-		# Cargamos la libreria 
-		sendMsg(message)
-		return
-
-	def __clientLogin(self, communicator):
-		canWrite = False
-		userAccepted = False
-		communicator.setTimeout(20)
-		message = communicator.receiveTcpMessage()
-		if (message == "timeout"):
-			return (False,"timeout")
-		loginInfo = json.loads(message)
-		userAccepted = self.__authenticator.checkLog(loginInfo['username'], loginInfo['password'])
-		if (userAccepted):
-			canWrite = self.__authenticator.userCanWrite()
-
-		message = self.__formatter.formatLogin(loginInfo['username'], loginInfo['password'],  str(userAccepted).lower(), str(canWrite).lower())
-		user = loginInfo['username']
-		communicator.sendTcpMessage(message)
-		if (userAccepted):
-			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_GREEN}accepted{TXT_RESET}")
-			return (True, user)
-		else:
-			printMsgTime(f"User \"{loginInfo['username']}\" {TXT_RED}not accepted{TXT_RESET}")
-			return (False, user)
-
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
-		printMsgTime(f"{TXT_YELLOW}Binded to ip:{self.__host} | port:{self.__port}{TXT_RESET}")
+		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__host} | port: {self.__port}{TXT_RESET}")
 
 		self.__waitForClient()
 

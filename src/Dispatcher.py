@@ -1,6 +1,5 @@
 import ctypes
 from PipeManager import *
-from SimulatorTcp import SimulatorTcp
 from Utilities import *
 import queue
 import socket
@@ -8,13 +7,7 @@ import socket
 
 class Dispatcher:
 	def __init__(self, host, port):
-		# destination of the calculation server
-		self.__host = host            # server port
-		self.__port = port            # server ip
-
-		# creation of TCP to dispatch operations to next layer
-		self.__sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-		self.__communicator = SimulatorTcp(self.__sock, self.__host, self.__port)
+		self.x = 9
 
 	def dispatch(self):
 		try:

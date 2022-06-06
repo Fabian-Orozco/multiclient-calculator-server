@@ -1,9 +1,9 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
+from operator import truediv
 from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
-from SimulatorTcp import SimulatorTcp
 from Validator import Validator
 from MessageFormatter import MessageFormatter
 import json
@@ -19,7 +19,9 @@ class Client:
 	# initializes the attributes
 	def __init__(self, port, host):
 		self.__argsAnalizer = Args_analizer()
-		self.__comm = SimulatorTcp(socket.socket(socket.AF_INET, socket.SOCK_DGRAM), port, host)
+		self.__comm = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		self.serverPort = port
+		self.serverHost = host
 		self.__validator = Validator()
 		self.__msgFormatter = MessageFormatter()
 		self.__username = ""
@@ -49,8 +51,8 @@ class Client:
 			else:
 				formatedMessage = self.__generateAction(input)
 				if (formatedMessage != "Invalid_content"): 
-					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					self.__sendMessage(formatedMessage)
+					printMsgTime(f"Request {TXT_GREEN}sent{TXT_RESET}\n")
 					# Etapa 3
 					# serverResponse = self.__receiveMessage(formatedMessage)
 					# self.__verifyServerResponse()
@@ -104,19 +106,19 @@ class Client:
 
 		if (userInput == "-r"):  # read [] => all
 				# Tcp takes care of dividing. "end" is assumed to be true
-				return self.__msgFormatter.formatRequestRead("true", -1) 	# -r
+				return self.__msgFormatter.formatRequestRead(-1) 	# -r
 		
 		elif ("-r" in userInput):  		# read action
 			if (" " in userInput):		# read + index
 				# Tcp takes care of dividing. "end" is assumed to be true
 				if (content.isnumeric()):
-					return self.__msgFormatter.formatRequestRead("true", int(content))
+					return self.__msgFormatter.formatRequestRead(int(content))
 
 		elif("-w" in userInput):
 			if (" " in userInput):
 				if (self.__validateData(content)):  # validates the mathematical operation		
 					if (self.__canWrite == True):
-						return self.__msgFormatter.formatRequestWrite("true",content)
+						return self.__msgFormatter.formatRequestWrite(content)
 					else:
 						printErrors(f"The user {TXT_YELLOW}{self.__username}{TXT_RESET} does not have write permissions.")
 		return "Invalid_content"
@@ -126,8 +128,13 @@ class Client:
 	##
 	#
 	def __connect(self):
-		if(self.__comm.connect() == False):
-			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
+		while(True):
+			try:
+				self.__comm.connect((self.serverHost, self.serverPort))
+				break
+			except:
+				printErrors("Server not found. Retrying connection.")
+				sleep(5)
 		# to give the server time to establish the connection before logging in
 		sleep(1)
 
@@ -135,7 +142,7 @@ class Client:
 
 	def __disconnect(self):
 		disconnectMessage = self.__msgFormatter.formatDisconnect()
-		self.__comm.sendTcpMessage(disconnectMessage)
+		self.__sendMessage(disconnectMessage)
 	
 ####################################################################################
 
@@ -146,8 +153,7 @@ class Client:
 		message = self.__msgFormatter.formatLogin(self.__username, self.__password)
 		printMsgTime(f"{TXT_YELLOW}Logging in as{TXT_RESET}: {self.__username}")
 		self.__sendMessage(message)
-		self.__comm.setTimeout(10)
-		response = self.__receiveMessage()
+		response = self.__receiveMessage(20)
 		if (response == "timeout"):
 			self.__close(f"Program finished: {TXT_RED}the server did not respond.{TXT_RESET}")
 		json_response = json.loads(response)
@@ -167,18 +173,27 @@ class Client:
 	#
 	def __sendMessage(self, message):
 		# Invokes Simulator_Tcp to send a message
-		if (self.__comm.sendTcpMessage(message) == False):
-			printErrors(f"{TXT_RED}Server did not respond.{TXT_RESET}")
-			self.__close(f"{TXT_RED}Disconnected from server{TXT_RESET}")
+		try:
+			self.__comm.send(message.encode('UTF-8'))
+		except:
+			self.__close(f"Program {TXT_RED}finished{TXT_RESET} server did not respond.")
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 
 ####################################################################################
 
 	##
 	#
-	def __receiveMessage(self):
-		# Invokes Simulator_Tcp to receive a message
-		message = self.__comm.receiveTcpMessage()
-		return message
+	def __receiveMessage(self, timeout):
+		# maximum timeout is 5 minutes
+		self.__comm.settimeout(timeout)
+		message = ""
+		try:
+			message = self.__comm.recv(128)
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
+			return message.decode('UTF-8')
+		except socket.timeout:
+			# timout reached
+			return "timeout"
 
 ####################################################################################
 
@@ -223,9 +238,9 @@ def main():
 		host = sys.argv[5]
 		port = int(sys.argv[6])
 	
-	client = Client(host, port)
+	client = Client(port, host)
 	client.run()
 
 if __name__ == "__main__":
   	main()
-####################################################################################
+####################################################################################\
