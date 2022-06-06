@@ -1,7 +1,6 @@
 import socket
 import threading
 import os
-from PipeManager import *
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -20,6 +19,8 @@ class Server:
 		self.__authenticator = Authenticator()
 		self.__formatter = MessageFormatter()
 		self.__requestsQueue = queue.Queue()
+		self.dispatcher = Dispatcher()
+
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
@@ -119,11 +120,6 @@ class Server:
 		# if while is finished, it means we have to clesthe connection
 		return "disconnect"
 
-	def __sendPipe(self, message):
-		# Cargamos la libreria 
-		sendMsg(message)
-		return
-
 	def __clientLogin(self, communicator):
 		# control variables
 		canWrite = False
@@ -183,12 +179,9 @@ class Server:
 			# Get the next data to consume, or block while queue is empty
 			request = self.__requestsQueue.get(block = True, timeout = None)
 
-			# checking if the request is a stop condition
-			if (request == "stop"):
-				self.__sendPipe(request)
-				break
-			# send the message through the pipe
-			self.__sendPipe(request)
+			# dispatcher will be called in this section
+			printMsgTime("Dispatcher work zone")
+			self.dispatcher.dispatch(request)
 
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
@@ -209,15 +202,4 @@ if(__name__ == '__main__'):
 		port = int(sys.argv[2])
 
 	server = Server(host, port)
-	dispatcher = Dispatcher('127.0.0.2', 7070)
-
-	pid = createChild()
-	if(pid ==  0):
-		closeWriteEnd()
-		dispatcher.dispatch()
-	elif(pid == -1):
-		printErrors("Fork failure")
-	else:
-		closeReadEnd()
-		server.run()
-		closeWriteEnd()
+	server.run()
