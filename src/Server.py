@@ -1,7 +1,3 @@
-from email import message
-import logging
-from pickle import NONE
-from runpy import run_module
 import socket
 import threading
 import os
@@ -13,6 +9,7 @@ import queue
 from Dispatcher import Dispatcher
 import sys
 from time import sleep
+from Router import Router
 
 
 class Server:
@@ -195,13 +192,13 @@ class Server:
 		sock.send(message.encode('UTF-8'))
 
 	def __consumeRequests(self):
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Dispatcher work zone")
 		request = ""
 		while (True):
 			# Get the next data to consume, or block while queue is empty
 			request = self.__requestsQueue.get(block = True, timeout = None)
 
 			# dispatcher will be called in this section
-			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Dispatcher work zone")
 			self.dispatcher.dispatch(request)
 
 	def run(self):
@@ -237,5 +234,5 @@ if(__name__ == '__main__'):
 		if (routerID == "-"): 
 			printErrors("The router id was not specified")
 			exit(0)
-		# router = Router()
+		node = Router(serverHost, serverPort, routerID)
 
