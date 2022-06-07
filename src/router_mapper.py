@@ -4,8 +4,6 @@
 import csv
 import sys
 
-from sklearn import neighbors
-
 topology_filename = "topologia.csv"
 IP_7r = "172.16.202.167"	                #IP de 7raspado - Orozco
 Port_server = "8081"                        # Puerto del server 7raspado
@@ -39,7 +37,7 @@ def createSh(conns):
         while (counter < len(conns)):
             temp = f"\"python3 Router2.py router {conns[counter][0]} {IP_7r} {Port_server} {conns[counter][1]}\""
             temp = temp[1:len(temp)-1:]  # quita comillas
-            configRouter_sh.write(f"gnome-terminal -- {temp}\n")
+            configRouter_sh.write(f"{temp} &\n")
             counter = counter + 1
 
 def createNeighborsCsv(conns):

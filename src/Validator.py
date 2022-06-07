@@ -3,8 +3,8 @@ from Utilities import *
 ## Class Validator
 # This class verifies if the input operation is valid or not
 class Validator:
-    VALID_ENTRIES = {".","(", ")", "+", "-", "*", "/", "sqrt", "^", "1","2","3","4","5","6","7","8","9","0"}
-    VALID_SYMBOLS = {".","(", ")","+", "*", "/", "sqrt", "^",}
+    VALID_ENTRIES = {"." ,"(", ")", "+", "-", "*", "/", "sqrt", "^", "1","2","3","4","5","6","7","8","9","0"}
+    VALID_SYMBOLS = {"(", ")","+", "*", "/", "sqrt", "^",}
     VALID_NUMBERS = {"1","2","3","4","5","6","7","8","9","0"}
 
     ## Validates if the sqrt function is well typed
@@ -17,8 +17,12 @@ class Validator:
                 if(input[i + 2] == "r"):
                     if(input[i + 3] == "t"):
                         if(input[i + 4] == "("):
-                            if ((input[i + 5] in self.VALID_NUMBERS) or (input[i + 5] == "s") or (input[i + 5] == "(")):
+                            if (input[i + 5] in self.VALID_NUMBERS):
                                 return True
+                            else:
+                                printErrors("You can only put a valid number inside a sqrt() function")
+                                return False
+        printErrors("The sqrt() function was not typed properly")
         return False
 
 
@@ -29,14 +33,14 @@ class Validator:
     def __checkBorders(self, input, length):
         i = 0
         char = input[i]
-        if ((char != "(") and (char != "-") and (char in self.VALID_SYMBOLS) and (char != "s")):  
+        if ((char != "(") and (char != "-") and (char in self.VALID_SYMBOLS or (char == ".")) and (char != "s")):  
             return False                          # If the beginning is a symbol except "(" or "-" or "s" return False
         elif((char == "-") and (i + 1) < length):
             if(input[i + 1] == "-"):              # If the beginning is -- return False
                 return False
 
         char = input[length - 1]
-        if (((char != ")") and (char in self.VALID_SYMBOLS)) or (char == "-")):
+        if (((char != ")") and (char in self.VALID_SYMBOLS)) or (char == "-") or (char == ".")):
             return False                          # If the end is a symbol except ")" return False
         
         return True
@@ -82,6 +86,12 @@ class Validator:
                     if (input[i - 1] != ")"):
                         return False
 
+    def __checkFloat(self, input, length, i):
+        if(((i - 1) >= 0) and ((i + 1) < length)):
+            if((input[i - 1] in self.VALID_NUMBERS) and (input[i + 1] in self.VALID_NUMBERS)):
+                return True
+        printErrors("The decimal numbers are wrong")
+        return False
 
     ## Verifies the input operation string
     # @param input: The input operation string 
@@ -104,7 +114,6 @@ class Validator:
                         openParenthesis = openParenthesis + 1   # If is well typed jumps to the space after the open parenthesis
                         i = i + 5
                     else:
-                        printErrors("The sqrt() function was not typed properly")
                         return False                            # If the sqrt function is wrong typed returns false
                 else:
                     found = char in self.VALID_ENTRIES          # Validates that the current character is a valid one
@@ -113,10 +122,17 @@ class Validator:
                         
                         # Is not a parenthesis
                         if ((char != "(") and (char != ")")):      
-                            if (((i + 1) < len(input)) and ((char in self.VALID_SYMBOLS) or char == "-")): # There is something after a symbol
-                                operationFound = True
+                            if (((i + 1) < len(input)) and ((char in self.VALID_SYMBOLS) or char == "-" or char == ".")): # There is something after a symbol
+                                if(char == "-"):
+                                    if(i != 0):
+                                        operationFound = True
+                                if(char != "." and char != "-"):
+                                    operationFound = True
                                 if(char == "-"):
                                     if (self.__checkMinus(input, i) == False):
+                                        return False
+                                elif(char == "."):
+                                    if(self.__checkFloat(input,length,i) == False):
                                         return False
                                 else:
                                     if ((char == input[i + 1])):  #Verifies that there's not duplicated symbols such as ++
