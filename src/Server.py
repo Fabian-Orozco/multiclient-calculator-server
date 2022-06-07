@@ -1,7 +1,10 @@
+from email import message
+import logging
+from pickle import NONE
+from runpy import run_module
 import socket
 import threading
 import os
-from PipeManager import *
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -9,24 +12,32 @@ from MessageFormatter import MessageFormatter
 import queue
 from Dispatcher import Dispatcher
 import sys
+from time import sleep
+
 
 class Server:
 	def __init__(self, host, port):
-		self.__host = host            # server port
-		self.__port = port            # server ip
-		self.__maxTimeOut = 300       # max timout of client inactivity in seconds
-		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.__welcomingSocket.bind((self.__host, self.__port))
-		self.__authenticator = Authenticator()
-		self.__formatter = MessageFormatter()
-		self.__requestsQueue = queue.Queue()
+		#=========================================================================================#
+		# server attributes
+		self.__serverHost = host                # server port
+		self.__serverPort = port                # server ip
+		self.__formatter = MessageFormatter()   # class to create messages with format
+		self.__maxTimeOut = 300                                                              # max timeout of client inactivity in seconds
+		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)           # server welcoming socket
+		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
+		self.__requestsQueue = queue.Queue()                                                 # server requests queue
+		self.dispatcher = Dispatcher()                                                       # server uses a dispacther to send messages to routers net
+		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
+		self.__routerConnection = None                                                       # direct connection between a node/router and the server
+		#=========================================================================================#
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
 		# shutdown the server closes the socket
 		self.__welcomingSocket.close()
+		exit(0)
 
-	def __waitForClient(self):
+	def __waitForConnection(self):
 		# start of thread tha consumes from the requests queue
 		consumerThread = threading.Thread(target = self.__consumeRequests)
 		consumerThread.daemon = True
@@ -37,6 +48,9 @@ class Server:
 		try:
 			while (True):
 				try:
+					# infinite timeout so it waits for clients all the time.
+					self.__welcomingSocket.settimeout(None)
+
 					# welcoming socket listening for new connections
 					self.__welcomingSocket.listen()
 
@@ -46,7 +60,7 @@ class Server:
 
 					# creates thread to manage the connection
 					# the thread receives the socket of the new connection
-					thread = threading.Thread(target = self.__handleConnection, args = (newSocket, address))
+					thread = threading.Thread(target = self.__detectConnectionType, args = (newSocket, address))
 
 					# deamon thread so it destoys itself when it has finished working
 					thread.daemon = True
@@ -60,12 +74,23 @@ class Server:
 			self.__requestsQueue.put("stop")
 			self.shutDownServer()
 
-	def __handleConnection(self, connection, address):
+	def __detectConnectionType(self, sock, address):
+		connectionType = self.__recvMsg(sock, 20)
+		if (connectionType == "timeout"):
+			return
+		jsonMessage = json.loads(connectionType)
+
+		if (jsonMessage["type"] ==  "login"):
+			self.__handleClientConnection(sock, address, connectionType)
+		elif (jsonMessage["type"] ==  "router"):
+			printMsgTime(f"{TXT_GREEN}Testing{TXT_RESET} handle router connection")
+
+	def __handleClientConnection(self, connection, address, loginMessage):
 		# connection established with client
 		printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET} to ip:{address[0]} | port:{address[1]}")
 
 		# authentication process
-		loginAccepted, user = self.__clientLogin(connection)
+		loginAccepted, user = self.__clientLogin(connection, loginMessage)
 
 		# if not accepted the user
 		if(loginAccepted == False):
@@ -119,18 +144,10 @@ class Server:
 		# if while is finished, it means we have to clesthe connection
 		return "disconnect"
 
-	def __sendPipe(self, message):
-		# Cargamos la libreria 
-		sendMsg(message)
-		return
-
-	def __clientLogin(self, communicator):
+	def __clientLogin(self, communicator, message):
 		# control variables
 		canWrite = False
 		userAccepted = False
-
-		# receives login message from client with 20 seconds timeout
-		message = self.__recvMsg(communicator, 20)
 
 		if (message == "timeout"):
 			# timeout reached, we return timeout message
@@ -183,41 +200,42 @@ class Server:
 			# Get the next data to consume, or block while queue is empty
 			request = self.__requestsQueue.get(block = True, timeout = None)
 
-			# checking if the request is a stop condition
-			if (request == "stop"):
-				self.__sendPipe(request)
-				break
-			# send the message through the pipe
-			self.__sendPipe(request)
+			# dispatcher will be called in this section
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Dispatcher work zone")
+			self.dispatcher.dispatch(request)
 
 	def run(self):
+		# decides if it runs as a server or a router
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
-		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__host} | port: {self.__port}{TXT_RESET}")
+		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__serverHost} | port: {self.__serverPort}{TXT_RESET}")
+		self.__waitForConnection()
 
-		self.__waitForClient()
 
 if(__name__ == '__main__'):
-	# default
-	host = '127.0.0.1'
-	port = 8080
+	# default values
+	runmode = "server"
+	serverHost = '127.0.0.1'
+	serverPort = 8080
+	routerID = "-"
+	if (len(sys.argv) >= 2):  # script | mode
+		runmode = sys.argv[1].lower()
 
-	if (len(sys.argv) == 2):  # script | host
-		host = sys.argv[1]
+	if(len(sys.argv) >= 3):  # script | mode | host
+		serverHost = sys.argv[2]
 
-	elif(len(sys.argv) == 3):  # script | host | port
-		host = sys.argv[1]
-		port = int(sys.argv[2])
+	if(len(sys.argv) >= 4):  # script | mode | host | port
+		serverPort = int(sys.argv[3])
 
-	server = Server(host, port)
-	dispatcher = Dispatcher('127.0.0.2', 7070)
+	if(len(sys.argv) >= 5):  # script | mode | host | port | id
+		routerID = sys.argv[4]
 
-	pid = createChild()
-	if(pid ==  0):
-		closeWriteEnd()
-		dispatcher.dispatch()
-	elif(pid == -1):
-		printErrors("Fork failure")
-	else:
-		closeReadEnd()
+	print(f"runmode: {runmode}; serverHost: {serverHost}, serverPort: {serverPort}, routerID: {routerID}")
+	if (runmode == "server"):
+		server = Server(serverHost, serverPort)
 		server.run()
-		closeWriteEnd()
+	elif (runmode == "router"):
+		if (routerID == "-"): 
+			printErrors("The router id was not specified")
+			exit(0)
+		# router = Router()
+
