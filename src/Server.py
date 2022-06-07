@@ -8,24 +8,51 @@ from MessageFormatter import MessageFormatter
 import queue
 from Dispatcher import Dispatcher
 import sys
+from time import sleep
+
 
 class Server:
-	def __init__(self, host, port):
-		self.__host = host            # server port
-		self.__port = port            # server ip
-		self.__maxTimeOut = 300       # max timout of client inactivity in seconds
-		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-		self.__welcomingSocket.bind((self.__host, self.__port))
-		self.__authenticator = Authenticator()
+	def __init__(self, mode, host, port):
+		self.__serverHost = host            # server port
+		self.__serverPort = port            # server ip
+		self.__maxTimeOut = 300       # max timeout of client inactivity in seconds
 		self.__formatter = MessageFormatter()
+		if (mode == "server"):
+			self.__configServer()
+		elif (mode == "router"):
+			self.__configRouter(id)
+
+	def __configRouter(self, id="-"):
+		# id to identinify the router
+		self.__routerId = id
+		self.__routerConnection = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# tries to connect with server
+		while(True):
+			try:
+				self.__routerConnection.connect((self.__serverHost, self.__serverPort))
+				break
+			except KeyboardInterrupt:
+				self.shutDownServer()
+			except:
+				printErrors("Server not found. Retrying connection.")
+				sleep(5)
+		self.__sendMsg(self.__routerConnection, "{\"type\":\"router\"}")
+
+	def __configServer(self):
+		# server creates the socket
+		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+		# server binds the socket
+		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
+
 		self.__requestsQueue = queue.Queue()
 		self.dispatcher = Dispatcher()
-
+		self.__authenticator = Authenticator()
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
 		# shutdown the server closes the socket
 		self.__welcomingSocket.close()
+		exit(0)
 
 	def __waitForClient(self):
 		# start of thread tha consumes from the requests queue
@@ -38,6 +65,9 @@ class Server:
 		try:
 			while (True):
 				try:
+					# infinite timeout so it waits for clients all the time.
+					self.__welcomingSocket.settimeout(None)
+
 					# welcoming socket listening for new connections
 					self.__welcomingSocket.listen()
 
@@ -185,21 +215,25 @@ class Server:
 
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
-		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__host} | port: {self.__port}{TXT_RESET}")
+		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__serverHost} | port: {self.__serverPort}{TXT_RESET}")
 
 		self.__waitForClient()
 
 if(__name__ == '__main__'):
-	# default
-	host = '127.0.0.1'
-	port = 8080
+	# default values
+	runmode = "server"
+	ServerHost = '127.0.0.1'
+	ServerPort = 8080
+	routerID = "-"
+	if (len(sys.argv) >= 2):  # script | mode
+		runmode = sys.argv[1].lower()
 
-	if (len(sys.argv) == 2):  # script | host
-		host = sys.argv[1]
+	if(len(sys.argv) >= 3):  # script | mode | host
+		ServerHost = sys.argv[2]
 
-	elif(len(sys.argv) == 3):  # script | host | port
-		host = sys.argv[1]
-		port = int(sys.argv[2])
+	if(len(sys.argv) >= 4):  # script | mode | host | port
+		ServerPort = int(sys.argv[3])
 
-	server = Server(host, port)
+
+	server = Server(runmode, ServerHost, ServerPort)
 	server.run()
