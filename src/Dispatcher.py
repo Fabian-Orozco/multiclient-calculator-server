@@ -1,25 +1,18 @@
 import ctypes
-from PipeManager import *
 from Utilities import *
 import queue
 import socket
 
 
 class Dispatcher:
-	def __init__(self, host, port):
-		self.x = 9
+	def __init__(self, sock, router):
+		self.__routerConnection = sock
+		self.__routerID = router
 
-	def dispatch(self):
-		try:
-			while(True):
-				message = receiveMsg()
-				if(message == b"stop"):
-					print("Cerrando proceso B")
-					exit(0)
-				printMsgTime(f"{TXT_GREEN}Process B{TXT_RESET} will dispatch the next message: {message.decode('utf-8')}")
-		except KeyboardInterrupt:
-			closeReadEnd()
-			exit(0)
-			
+	def dispatch(self, message):
 		# dispatcher just sends tne consumed messages of the queue to another server for now
-		# self.__communicator.sendTcpMessage(message)
+		printMsgTime(f"{TXT_GREEN}Dispatcher{TXT_RESET} will send to router \"{self.__routerID}\" the next message: {message}")
+
+	def shutDown(self):
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Shutting down dispatcher conected to router \"{self.__routerID}\"")
+		self.__routerConnection.close()
