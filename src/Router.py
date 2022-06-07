@@ -18,7 +18,7 @@ class Router:
 		self.__connectToServer()
 	
 	def __connectToServer(self):
-		printMsgTime(f"{TXT_YELLOW}Connecting to server{TXT_RESET} ip: {self.__serverIP} | poert: {self.__serverPort}")
+		printMsgTime(f"{TXT_YELLOW}Connecting to server{TXT_RESET} ip: {self.__serverIP} | port: {self.__serverPort}")
 		# tries to connect with server
 		while(True):
 			try:
@@ -29,7 +29,7 @@ class Router:
 			except:
 				printErrors("Server not found. Retrying connection.")
 				sleep(5)
-		self.__sendMsg(self.__SocketServer, "{\"type\":\"router\",\"id\":\"A\"}")
+		self.__sendMsg(self.__SocketServer, "{\"type\":\"router\",\"id\":\""+ self.__routerID + "\"}")
 	
 	def __recvMsg(self, sock, timeout):
 		# maximum timeout is 5 minutes
