@@ -4,8 +4,6 @@
 import csv
 import sys
 
-from sklearn import neighbors
-
 topology_filename = "topologia.csv"
 IP_7r = "172.16.202.167"	                #IP de 7raspado - Orozco
 Port_server = "8081"                        # Puerto del server 7raspado
