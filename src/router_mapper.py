@@ -33,11 +33,17 @@ def getNodesInfo():
 def createSh(conns):
     with open("start_router.sh", "w") as configRouter_sh:
         counter = 0
-        configRouter_sh.write("#order: ID_router IP Port_server Port_router\n")
+        configRouter_sh.write("#order: IP Port_server ID_router\n")
+        IDs_registers = ""
         while (counter < len(conns)):
-            temp = f"\"python3 Router2.py router {conns[counter][0]} {IP_7r} {Port_server} {conns[counter][1]}\""
-            temp = temp[1:len(temp)-1:]  # quita comillas
-            configRouter_sh.write(f"{temp} &\n")
+            if (conns[counter][0] not in IDs_registers):
+                if (counter == 0):  # solo el primer nodo se conecta al server
+                    temp = f"\"python3 Router2.py router {IP_7r} {Port_server} {conns[counter][0]}\""
+                else:
+                    temp = f"\"python3 Router2.py router - - {conns[counter][0]}\""
+                temp = temp[1:len(temp)-1:]  # quita comillas
+                configRouter_sh.write(f"{temp} &\n")
+                IDs_registers = IDs_registers + conns[counter][0]
             counter = counter + 1
 
 def createNeighborsCsv(conns):
