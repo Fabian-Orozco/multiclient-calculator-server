@@ -1,6 +1,8 @@
+from time import sleep
 def main():
-    print("hello desde Router2")
-    input("digite algo xd: ")
+    print("hello from router2")
     
 if __name__ == "__main__":
     main()
+    exit(0)
+    

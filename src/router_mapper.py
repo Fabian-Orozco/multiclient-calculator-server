@@ -39,7 +39,7 @@ def createSh(conns):
         while (counter < len(conns)):
             temp = f"\"python3 Router2.py router {conns[counter][0]} {IP_7r} {Port_server} {conns[counter][1]}\""
             temp = temp[1:len(temp)-1:]  # quita comillas
-            configRouter_sh.write(f"gnome-terminal -- {temp}\n")
+            configRouter_sh.write(f"{temp} &\n")
             counter = counter + 1
 
 def createNeighborsCsv(conns):
