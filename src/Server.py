@@ -253,7 +253,6 @@ class Server:
 
 	# @brief method to run the server
 	def run(self):
-		# decides if it runs as a server or a router
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
 		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__serverHost} | port: {self.__serverPort}{TXT_RESET}")
 		self.__waitForConnection()
@@ -272,12 +271,17 @@ if(__name__ == '__main__'):
 		serverHost = sys.argv[2]
 
 	if(len(sys.argv) >= 4):  # script | mode | host | port
-		serverPort = int(sys.argv[3])
+		try:
+			serverPort = int(sys.argv[3])
+		except:
+			serverPort = '-'
 
 	if(len(sys.argv) >= 5):  # script | mode | host | port | id
 		routerID = sys.argv[4]
 
 	print(f"runmode: {runmode}; serverHost: {serverHost}, serverPort: {serverPort}, routerID: {routerID}")
+
+	# decides if it runs as a server or a router
 	if (runmode == "server"):
 		server = Server(serverHost, serverPort)
 		server.run()
