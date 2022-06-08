@@ -1,7 +1,3 @@
-from email import message
-import logging
-from pickle import NONE
-from runpy import run_module
 import socket
 import threading
 import os
@@ -13,6 +9,7 @@ import queue
 from Dispatcher import Dispatcher
 import sys
 from time import sleep
+from Router import Router
 
 
 class Server:
@@ -26,22 +23,26 @@ class Server:
 		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)           # server welcoming socket
 		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
 		self.__requestsQueue = queue.Queue()                                                 # server requests queue
-		self.dispatcher = Dispatcher()                                                       # server uses a dispacther to send messages to routers net
 		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
-		self.__routerConnection = None                                                       # direct connection between a node/router and the server
+		self.__routersCount = 0                                                              # count of routers connected to this server
 		#=========================================================================================#
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
+		print(self.__routersCount)
+		while self.__routersCount > 0:
+			print("stop")
+			self.__requestsQueue.put("stop")
+			self.__routersCount = self.__routersCount - 1
 		# shutdown the server closes the socket
 		self.__welcomingSocket.close()
 		exit(0)
 
 	def __waitForConnection(self):
 		# start of thread tha consumes from the requests queue
-		consumerThread = threading.Thread(target = self.__consumeRequests)
-		consumerThread.daemon = True
-		consumerThread.start()
+		# consumerThread = threading.Thread(target = self.__consumeRequests)
+		# consumerThread.daemon = True
+		# consumerThread.start()
 
 		# waits for client connection
 		# creates a thread for each client
@@ -70,8 +71,7 @@ class Server:
 				except KeyboardInterrupt or OSError or EOFError:
 					break
 		finally:
-			# put stop condition in the queue to estop the consumer thread
-			self.__requestsQueue.put("stop")
+			# put stop condition in the queue to estop the consumers threads
 			self.shutDownServer()
 
 	def __detectConnectionType(self, sock, address):
@@ -83,11 +83,19 @@ class Server:
 		if (jsonMessage["type"] ==  "login"):
 			self.__handleClientConnection(sock, address, connectionType)
 		elif (jsonMessage["type"] ==  "router"):
-			printMsgTime(f"{TXT_GREEN}Testing{TXT_RESET} handle router connection")
+			self.__routersCount += 1
+			self.handleRouterConnection(sock, address, connectionType)
+
+	def handleRouterConnection(self, sock, address, message):
+		routerInfo = json.loads(message)
+		routerID = routerInfo["id"]
+		printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Router {routerID} | ip:{address[0]} | port:{address[1]}")
+		dispatch = Dispatcher(sock, routerID)
+		self.__consumeRequests(dispatch)
 
 	def __handleClientConnection(self, connection, address, loginMessage):
 		# connection established with client
-		printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET} to ip:{address[0]} | port:{address[1]}")
+		printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET}Client | ip:{address[0]} | port:{address[1]}")
 
 		# authentication process
 		loginAccepted, user = self.__clientLogin(connection, loginMessage)
@@ -194,15 +202,17 @@ class Server:
 		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 		sock.send(message.encode('UTF-8'))
 
-	def __consumeRequests(self):
+	def __consumeRequests(self, dispacther):
 		request = ""
 		while (True):
 			# Get the next data to consume, or block while queue is empty
 			request = self.__requestsQueue.get(block = True, timeout = None)
 
+			if (request  == "stop"):
+				break
 			# dispatcher will be called in this section
-			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Dispatcher work zone")
-			self.dispatcher.dispatch(request)
+			dispacther.dispatch(request)
+		dispacther.shutDown()
 
 	def run(self):
 		# decides if it runs as a server or a router
@@ -237,5 +247,5 @@ if(__name__ == '__main__'):
 		if (routerID == "-"): 
 			printErrors("The router id was not specified")
 			exit(0)
-		# router = Router()
+		node = Router(serverHost, serverPort, routerID)
 
