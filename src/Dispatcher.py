@@ -14,5 +14,5 @@ class Dispatcher:
 		printMsgTime(f"{TXT_GREEN}Dispatcher{TXT_RESET} will send to router \"{self.__routerID}\" the next message: {message}")
 
 	def shutDown(self):
-		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Shutting down dispatcher conected to router \"{self.__routerID}\"")
+		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Shutting down dispatcher connected to router \"{self.__routerID}\"")
 		self.__routerConnection.close()
