@@ -24,27 +24,30 @@ class Server:
 		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
 		self.__requestsQueue = queue.Queue()                                                 # server requests queue
 		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
-		self.__routersCount = 0                                                              # count of routers connected to this server
 		#=========================================================================================#
+
+		# threads list to be able to join them
+		self.__threadsArray = []
+
 
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
-		print(self.__routersCount)
-		while self.__routersCount > 0:
+		routersCount = len(self.__threadsArray)
+		print(f"Routercount is {routersCount}")
+		while routersCount > 0:
 			print("stop")
 			self.__requestsQueue.put("stop")
-			self.__routersCount = self.__routersCount - 1
+			routersCount -= 1
+
+		for thread in self.__threadsArray:
+			thread.join()
+
 		# shutdown the server closes the socket
 		self.__welcomingSocket.close()
 		exit(0)
 
 	def __waitForConnection(self):
-		# start of thread tha consumes from the requests queue
-		# consumerThread = threading.Thread(target = self.__consumeRequests)
-		# consumerThread.daemon = True
-		# consumerThread.start()
-
-		# waits for client connection
+		# waits for any connection
 		# creates a thread for each client
 		try:
 			while (True):
@@ -62,6 +65,7 @@ class Server:
 					# creates thread to manage the connection
 					# the thread receives the socket of the new connection
 					thread = threading.Thread(target = self.__detectConnectionType, args = (newSocket, address))
+					self.__threadsArray.append(thread)
 
 					# deamon thread so it destoys itself when it has finished working
 					thread.daemon = True
@@ -81,9 +85,10 @@ class Server:
 		jsonMessage = json.loads(connectionType)
 
 		if (jsonMessage["type"] ==  "login"):
+			# thread runs as a manager for client connections
 			self.__handleClientConnection(sock, address, connectionType)
 		elif (jsonMessage["type"] ==  "router"):
-			self.__routersCount += 1
+			# thread runs as a manager for routers connections
 			self.handleRouterConnection(sock, address, connectionType)
 
 	def handleRouterConnection(self, sock, address, message):
@@ -95,7 +100,7 @@ class Server:
 
 	def __handleClientConnection(self, connection, address, loginMessage):
 		# connection established with client
-		printMsgTime(f"{TXT_GREEN}Connection established{TXT_RESET}Client | ip:{address[0]} | port:{address[1]}")
+		printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Client | ip:{address[0]} | port:{address[1]}")
 
 		# authentication process
 		loginAccepted, user = self.__clientLogin(connection, loginMessage)
