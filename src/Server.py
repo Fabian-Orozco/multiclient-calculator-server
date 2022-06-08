@@ -26,19 +26,21 @@ class Server:
 		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
 		#=========================================================================================#
 
-		# threads list to be able to join them
+		# threads list to be able to join them before closing
 		self.__threadsArray = []
 
-
+	# @brief closes server
+	# @details sends stop condition to threads and joins them
 	def shutDownServer(self):
 		printMsgTime(f'{TXT_RED}|======: Shutting down server :======|{TXT_RESET}')
 		routersCount = len(self.__threadsArray)
-		print(f"Routercount is {routersCount}")
+
+		# sending stop condition to each thread to the queue
 		while routersCount > 0:
-			print("stop")
 			self.__requestsQueue.put("stop")
 			routersCount -= 1
-
+		
+		# join of each thread
 		for thread in self.__threadsArray:
 			thread.join()
 
@@ -46,6 +48,7 @@ class Server:
 		self.__welcomingSocket.close()
 		exit(0)
 
+	# @brief Server waits for any connection (router or client)
 	def __waitForConnection(self):
 		# waits for any connection
 		# creates a thread for each client
@@ -78,6 +81,10 @@ class Server:
 			# put stop condition in the queue to estop the consumers threads
 			self.shutDownServer()
 
+	# @brief Detects the connection type 
+	# @details method to determine if the threads has to run as a client manager or server manager
+	# @param sock new socket where the connection is moved to after handshake
+	# @param address ip and port form the client/router
 	def __detectConnectionType(self, sock, address):
 		connectionType = self.__recvMsg(sock, 20)
 		if (connectionType == "timeout"):
@@ -91,6 +98,11 @@ class Server:
 			# thread runs as a manager for routers connections
 			self.handleRouterConnection(sock, address, connectionType)
 
+	# @brief Method to handle a router connection 
+	# @details works as a consumer thread that consumes requests from the server queue and calls the dispatcher
+	# @param sock socket used to communicate with the router
+	# @param address ip and port form the client/router
+	# @param message is the first message received form the router
 	def handleRouterConnection(self, sock, address, message):
 		routerInfo = json.loads(message)
 		routerID = routerInfo["id"]
@@ -98,6 +110,12 @@ class Server:
 		dispatch = Dispatcher(sock, routerID)
 		self.__consumeRequests(dispatch)
 
+	# @brief Method to handle a client connection 
+	# @details receives operation requests form the cliente and push them into the requests queue of the server \
+	#  Also it does the authentication of the client.
+	# @param connection socket used to communicate with the client
+	# @param address ip and port form the client/router
+	# @param loginMessage is the first message received form the client with its credentials
 	def __handleClientConnection(self, connection, address, loginMessage):
 		# connection established with client
 		printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Client | ip:{address[0]} | port:{address[1]}")
@@ -127,6 +145,8 @@ class Server:
 		printMsgTime(f"User \"{user}\" {TXT_RED}disconnected{TXT_RESET}")
 		connection.close()
 
+	# @brief Waits for requests until desconnection message
+	# @param communicator socket used to communicate with the client
 	def __handleRequest(self, communicator):
 		# receives request message from client with a 5 minutes timeout
 		messageReceived = self.__recvMsg(communicator, self.__maxTimeOut)
@@ -157,6 +177,9 @@ class Server:
 		# if while is finished, it means we have to clesthe connection
 		return "disconnect"
 
+	# @brief Method to check the client credentials
+	# @param communicator socket used to communicate with the client
+	# @param message is the first message received form the client with its credentials
 	def __clientLogin(self, communicator, message):
 		# control variables
 		canWrite = False
@@ -191,6 +214,10 @@ class Server:
 			# return false because is a valid username. Also i returns the name of the user
 			return (False, loginInfo['username'])
 
+	# @brief Method to receive a message through tcp
+	# @details checks if the timeout is reached. 
+	# @param sock socket used to communicate
+	# @param timeout maximum seconds that can be waiting the socket for a message
 	def __recvMsg(self, sock, timeout):
 		# maximum timeout is 5 minutes
 		sock.settimeout(timeout)
@@ -203,10 +230,15 @@ class Server:
 			# timout reached
 			return "timeout"
 
+	# @brief Method to send a message through tcp
+	# @param sock socket used to communicate
+	# @param message message to be sent
 	def __sendMsg(self, sock, message):
 		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 		sock.send(message.encode('UTF-8'))
 
+	# @brief Method to consume from the requests queue
+	# @param dispatcher object that divides the requests a sends them to the router network
 	def __consumeRequests(self, dispacther):
 		request = ""
 		while (True):
@@ -219,6 +251,7 @@ class Server:
 			dispacther.dispatch(request)
 		dispacther.shutDown()
 
+	# @brief method to run the server
 	def run(self):
 		# decides if it runs as a server or a router
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
