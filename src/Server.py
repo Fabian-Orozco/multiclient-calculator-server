@@ -290,4 +290,4 @@ if(__name__ == '__main__'):
 			printErrors("The router id was not specified")
 			exit(0)
 		node = Router(serverHost, serverPort, routerID)
-
+		node.run()
