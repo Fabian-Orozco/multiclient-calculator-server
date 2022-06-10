@@ -1,14 +1,6 @@
-from concurrent.futures import process
-from fileinput import filename
-from hmac import new
-from multiprocessing import connection
 import socket
 import threading
 import os
-from turtle import Turtle
-from warnings import catch_warnings
-
-from numpy import rint
 from Utilities import *
 import json
 from MessageFormatter import MessageFormatter
@@ -85,7 +77,7 @@ class Router:
 			if (newSock != None):
 				newSockStruct = self.SocketStruct()
 				newSockStruct.sock = newSock
-				self.__receivesOperations(sockStruct)
+				self.__receiveOperations(sockStruct)
 				newSockStruct.close()
 
 			self.__processMessages(sockStruct)
@@ -99,7 +91,7 @@ class Router:
 			sockStruct.close()
 			sockStruct.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
-	def __receivesOperations(self, receiver, sockStruct):
+	def __receiveOperations(self, receiver, sockStruct):
 		while(True):
 			operation = receiver.recvMsg()
 			if (operation == "timeout"):
@@ -173,7 +165,7 @@ class Router:
 
 
 		def bind(self):
-			self.sock.bind((self.thisPort,self.thisRouterIp))
+			self.sock.bind((self.thisRouterPort,self.thisRouterIp))
 
 		def listen(self):
 			self.sock.listen()
@@ -202,7 +194,7 @@ class Router:
 				return "timeout"
 
 		def connect(self):
-			if (self.neighbordId == "Server"):
+			if (self.neighbordId.lower() == "server"):
 				self.__connectToServer()
 				return True
 			else:
