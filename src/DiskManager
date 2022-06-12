@@ -1,0 +1,6 @@
+class DiskManager:
+
+    def __init__(self):
+        disk = []
+    
+    
