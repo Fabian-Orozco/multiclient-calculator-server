@@ -151,12 +151,17 @@ class Router:
 
 			elif ((jsonMessage["type"] == "vector")):
 				self.__updateTable(jsonMessage)
+				self.__broadcastTable()
 
 			else:
 				printMsgTime(f"{TXT_RED}Testing{TXT_RESET} connection with router {sockStruct.neighbordId} received an unknown message: {message}")
 		
 
 	def __resendMessages(self, sockStruct):
+		while(sockStruct.outQueue.empty() != False):
+			sockStruct.sendMsg(sockStruct.outQueue.get())
+
+	def __createTable(self):
 		x = 0
 
 	def __updateTable(self, newTable):
@@ -164,6 +169,9 @@ class Router:
 
 	def __broadcastTable(self):
 		x = 0
+		strTable = ""
+		for conn in self.__connections:
+			conn.outQueue.put(strTable)
 
 	def __shutDown(self):
 		# shutdown the server closes the socket
@@ -180,6 +188,8 @@ class Router:
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Router {self.__routerID} started :======|{TXT_RESET}")
 		self.__loadAvailableNode()
+		self.__createTable()
+		self.__broadcastTable()
 		print(self.__availableNodes)
 		self.__createSockets(self.__connectionsFile)
 		self.__createthreads()
@@ -230,14 +240,14 @@ class Router:
 				return None
 
 		def sendMsg(self, message):
-			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
+			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message} to router {self.neighbordId}")
 			self.sock.send(message.encode('UTF-8'))
 
 		def recvMsg(self):
 			message = ""
 			try:
 				message = self.sock.recv(4096)
-				printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message}")
+				printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message} from router {self.neighbordId}")
 				return message.decode('UTF-8')
 			except socket.error:
 				return "timeout"
