@@ -1,10 +1,8 @@
-from http import server
+from random import random
 import socket
 import threading
 import os
-from cairo import TEXT_CLUSTER_FLAG_BACKWARD
 
-from numpy import true_divide
 from Utilities import *
 import json
 from MessageFormatter import MessageFormatter
@@ -19,7 +17,7 @@ class Router:
 	def __init__(self, serverIp, serverPort, id):
 		# this router info
 		self.__routerID = id
-		self.__ownIp = socket.gethostbyname(socket.gethostname())
+		# self.__ownIp = socket.gethostbyname(socket.gethostname())
 
 		# connection to server info
 		self.__serverIP = serverIp # maybe this will deleted
@@ -29,7 +27,7 @@ class Router:
 			self.__serverPort = serverPort
 		# self.__socketServer = self.SocketStruct(self.__ownIp, None, serverIp, serverPort, "server")
 		
-		self.__socketServer = self.SocketStruct("127.0.0.1", None, serverIp, serverPort, "server") # TESTING
+		self.__socketServer = self.SocketStruct(serverIp, None, serverIp, serverPort, "server") # TESTING
 
 		# Info to connect to other routers
 		self.__connections = dict({"server":self.__socketServer})
@@ -70,8 +68,6 @@ class Router:
 				stopCondition = self.__processMessages(sockStruct)
 				if (stopCondition == "threadStop"):
 					return
-				if (sockStruct.outQueue.empty() == False):
-					self.__resendMessages(sockStruct)
 			except KeyboardInterrupt:
 				self.__shutDown()
 
@@ -80,7 +76,7 @@ class Router:
 			file = csv.reader(neighbords)
 			for row in file:  # each row of the file
 				if (row[0] == self.__routerID):
-					newSocket = self.SocketStruct("127.0.0.1", row[1], row[3], row[4], row[2], int(row[5]))
+					newSocket = self.SocketStruct(self.__serverIP, row[1], row[3], row[4], row[2], int(row[5]))
 					self.__connections[row[2]] = newSocket
 
 	def __createthreads(self):
@@ -153,10 +149,17 @@ class Router:
 					printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Parte de oper conexion con router {sockStruct.neighbordId} mensaje: {message}")
 
 				else:
-					if (jsonMessage["destination"] in self.__connections):
+					if (jsonMessage["destination"] in self.__routingTable["destiny"]):
 						# IMPORTANT: We need to check the table to know which connection can reach the destiny
 						# right now this doens't check the table
-						self.__connections[jsonMessage["destination"]].outQueue.append(message)
+						tableIndex = self.__routingTable["destiny"].index(jsonMessage["destination"])
+						if (self.__routingTable["neighbord"][tableIndex] != "-"):
+							self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(message)
+						else:
+							# if we can't get to the destiny, the message ius assugned randomly to a connection
+							randomConnect = random.randint(1, len(self.__connections))
+							self.__connections[randomConnect].outQueue.put(message)
+							
 
 			elif ((jsonMessage["type"] == "vector")):
 				if(self.__updateTable(message)):
