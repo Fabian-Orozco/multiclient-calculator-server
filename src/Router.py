@@ -35,7 +35,7 @@ class Router:
 		self.__topologyFile = "topologia.csv"
 
 		# routing table info
-		self.__routingTable = {}
+		self.__routingTable = {"neighbord":[], "destiny":self.__availableNodes, "weights":[]}
 
 		# thread management
 		self.threadsArray = []
@@ -74,7 +74,7 @@ class Router:
 			file = csv.reader(neighbords)
 			for row in file:  # each row of the file
 				if (row[0] == self.__routerID):
-					newSocket = self.SocketStruct(self.__ownIp, row[1], row[3], row[4], row[2], row[5])
+					newSocket = self.SocketStruct(self.__ownIp, row[1], row[3], row[4], row[2], int(row[5]))
 					self.__connections[row[2]] = newSocket
 
 	def __createthreads(self):
@@ -162,16 +162,48 @@ class Router:
 			sockStruct.sendMsg(sockStruct.outQueue.get())
 
 	def __createTable(self):
-		x = 0
+		self.__routingTable["neighbord"] = ["-"] * len(self.__availableNodes)
+		self.__routingTable["weights"] = [-1] * len(self.__availableNodes)
+		connectionsList = self.__connections.values()
+		for conn in connectionsList:
+			if (conn.neighbordId != "server"):
+				x=0
+				tableRowIndex = self.__routingTable["destiny"].index(conn.neighbordId)
+				self.__routingTable["neighbord"][tableRowIndex] = conn.neighbordId
+				self.__routingTable["weights"][tableRowIndex] = conn.weight
+		print("Original")
+		print(self.__routingTable["destiny"])
+		print(self.__routingTable["neighbord"])
+		print(self.__routingTable["weights"])
 
-	def __updateTable(self, newTable):
-		x = 0
+
+
+	def __updateTable(self, vector):
+		test = "{\"type\":\"vector\",\"node\":\"A\",\"conn\":[{\"target\":\"B\",\"weight\":3},{\"target\":\"C\",\"weight\":23},{\"target\":\"C\",\"weight\":1}]}"
+		table = json.loads(test)
+		for connInfo in table["conn"]:
+			print("\n")
+			tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
+			if (self.__routingTable["weights"][tableRowIndex] == -1):
+				print("Poner fijo " + connInfo["target"] + " " + str(connInfo["weight"]))
+				self.__routingTable["neighbord"][tableRowIndex] = table["node"]
+				self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
+
+			elif(connInfo["weight"] < self.__routingTable["weights"][tableRowIndex]):
+				print("UPDATE "  + connInfo["target"] + " " + str(connInfo["weight"]))
+			print(self.__routingTable["destiny"])
+			print(self.__routingTable["neighbord"])
+			print(self.__routingTable["weights"])
+
 
 	def __broadcastTable(self):
 		x = 0
-		strTable = ""
-		for conn in self.__connections:
-			conn.outQueue.put(strTable)
+		strTable = "Esto es una tabla :v"
+		connectionsList = self.__connections.values()
+		for conn in connectionsList:
+			if (conn.neighbordId != "server"):
+				conn.outQueue.put(strTable)
+				print("Lo que le puso a la cola de " + conn.neighbordId + " \"" + conn.outQueue.get() + "\"")
 
 	def __shutDown(self):
 		# shutdown the server closes the socket
@@ -188,13 +220,13 @@ class Router:
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Router {self.__routerID} started :======|{TXT_RESET}")
 		self.__loadAvailableNode()
+		self.__createSockets(self.__connectionsFile)
 		self.__createTable()
 		self.__broadcastTable()
-		print(self.__availableNodes)
-		self.__createSockets(self.__connectionsFile)
-		self.__createthreads()
-		self.__connectToServer()
-		self.__runConnectionToServer(self.__connections["server"])
+		# self.__updateTable("hola")
+		# self.__createthreads()
+		# self.__connectToServer()
+		# self.__runConnectionToServer(self.__connections["server"])
 
 
 	class SocketStruct:
@@ -285,7 +317,7 @@ class Router:
 
 def main():
 	print(socket.gethostbyname(socket.gethostname()))
-	test =Router("127.0.0.1", "8081", "J")
+	test =Router("127.0.0.1", "8080", "J")
 	test.run()
 
 if (__name__ == '__main__'):
