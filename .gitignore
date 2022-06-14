@@ -1,4 +1,9 @@
 proof.py
+start_router.sh
+neighbors.csv
+config.csv
+topologia.csv
+topology.csv
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

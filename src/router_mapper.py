@@ -33,18 +33,20 @@ def getNodesInfo():
 def createSh(conns):
     with open("start_router.sh", "w") as configRouter_sh:
         counter = 0
-        configRouter_sh.write("#order: IP Port_server ID_router\n")
+        configRouter_sh.write("#!/bin/bash\n\n#order: IP Port_server ID_router\n")
         IDs_registers = ""
         while (counter < len(conns)):
-            if (conns[counter][0] not in IDs_registers):
+            nodeID = conns[counter][0]
+            if (nodeID not in IDs_registers): # no repite nodos, para no abrir mas de uno
                 if (counter == 0):  # solo el primer nodo se conecta al server
-                    temp = f"\"python3 Router2.py router {IP_7r} {Port_server} {conns[counter][0]}\""
+                    temp = f"\"screen -dmS \"{nodeID}-router\" python3 Router2.py router {IP_7r} {Port_server} {nodeID}\""
                 else:
-                    temp = f"\"python3 Router2.py router - - {conns[counter][0]}\""
+                    temp = f"\"screen -dmS \"{nodeID}-router\" python3 Router2.py router - - {conns[counter][0]}\""
                 temp = temp[1:len(temp)-1:]  # quita comillas
-                configRouter_sh.write(f"{temp} &\n")
+                configRouter_sh.write(f"{temp}\n")
                 IDs_registers = IDs_registers + conns[counter][0]
             counter = counter + 1
+    return IDs_registers # nodos abiertos
 
 def createNeighborsCsv(conns):
     with open("neighbors.csv", "w") as neighborsFile:
@@ -64,8 +66,8 @@ def main():
     print("\n\nRouter mapper Info:\ntopology_filename: " + topology_filename + "\nIP_7r: " + IP_7r + "\nPort_server: " + Port_server + "\n")
 
     conns = getNodesInfo()
-    createSh(conns)
-    print(len(conns) , "online routers of 7raspado")
+    runningNodes = createSh(conns)
+    print(len(runningNodes) , "online routers of 7raspado: " + runningNodes)
     createNeighborsCsv(conns)
     print("neighbors are ready to read for each router")
 

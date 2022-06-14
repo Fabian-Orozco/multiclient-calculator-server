@@ -1,8 +1,6 @@
 # 200 OK: Random network configuration file generator.
 # Taken from: https://stackoverflow.com/a/61961881
 
-# hacer local y cuidar puertos
-
 import sys
 import networkx as nx
 import random
@@ -33,14 +31,21 @@ def random_connected_graph(n, p):
 
 # Main program that generates the random graph and outputs the formatted configuration.
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    if len(sys.argv) < 2:
         print("Please specify the number of nodes the generated graph will have.")
         exit()
     
-    seed = random.randint(1,10)
-    
+
     # All available IPs:
     ips = ["172.16.202.167", "172.16.202.169", "172.16.202.180", "172.16.202.185", "172.16.202.191","172.16.202.192","172.16.202.44"]
+    # Local topology
+    if (len(sys.argv) > 2):
+        if (sys.argv[2] == "local" or sys.argv[2] == "127.0.0.1"):
+            ips = ["127.0.0.1"]
+    
+    seed = random.randint(1,10)
+    
+
     random.shuffle(ips)
 
     # Number of nodes to create based on input parameter:

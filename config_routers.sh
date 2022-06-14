@@ -14,6 +14,6 @@ python3 router_mapper.py $1 $2 $3
 chmod +x start_router.sh
 ./start_router.sh
 
-
+screen -ls
 echo
 echo -n [Configuración finalizada]
