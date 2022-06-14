@@ -21,6 +21,28 @@ class MessageFormatter:
     def jsonFormat(self, key, value, var_comma = ""):
         return self.__sQts(key) + ":" + f"{value}" + var_comma + ""
 
+    # Crea el formato de vectores
+    # @param routingTable: tabla de vectores del nodo
+    # @param node: Símbolo del nodo
+    # Example: 
+    # {"type":"vector","node":"A","conn":[{"target":"B","weight":3},{"target":"C","weight":23},{"target":"D","weight":-1}]} 
+    def vectorFormat(self, routingTable, node):
+        
+        format = "{"
+        format += self.jsonFormat("type",       self.__sQts("vector"),       ",")
+        format += self.jsonFormat("node", self.__sQts(node), ",")
+        format += self.__sQts("conn") + ":["
+
+        for index in range(len(routingTable["neighbord"])):
+            format +="{"
+            format += self.jsonFormat("target", self.__sQts(routingTable["destiny"][index]), ",")
+            format += self.jsonFormat("weight", routingTable["weights"][index])
+            format +="},"
+
+        format = format[:-1:]  # quita última coma
+        format += "]}"
+        return format
+
     ## Creates the necessary format for the login, agreed by all groups.
     # Example: {"seq":1,"type":"login","fin":true,"username":"u","password":"p"}
     # {"seq":13,"type":"login","fin":true,"username":"user","password":"pass","validated":true, "canWrite":true}
@@ -138,6 +160,8 @@ def main():
     print("Resp-Read \n" + msg_f.formatRequestRead(2,"false",3) + "\n")
     print("Disconnect \n" + msg_f.formatDisconnect() + "\n")
     print("Error \n" + msg_f.formatError("mensaje de error") + "\n")
+
+    print("Vector \n" + msg_f.vectorFormat("useless", "A") + "\n")
 
 if __name__ == "__main__":
   	main()
