@@ -6,6 +6,7 @@ topologia.csv
 topology.csv
 
 # Byte-compiled / optimized / DLL files
+*.csv
 __pycache__/
 *.py[cod]
 *$py.class
