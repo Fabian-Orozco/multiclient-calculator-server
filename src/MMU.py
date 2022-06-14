@@ -30,17 +30,69 @@ class MMU:
         operation = bytes(operation, encoding="utf-8")
         char = 0
         for byt in range(frame, frame+4):
+            if(char > len(operation)-1):
+                break
             self._ram[byt] = operation[char]
             char += 1
         print(self._ram)
 
+    def updatePageTable(self, operationNumber):
+        pageFrames = self._pagedDisk[operationNumber]
+        self.addPage(pageFrames)
 
-    #def _translate(self, page):
+
+    def getOperation(self, operationNumber):
+        operationPart = 0
+        operation = ""
+        count = 0
+        while(True):
+            page  = self._getPage(operationPart, operationNumber)
+            #Si la operacion no esta pagina se actualiza la pageTable para añadir las paginas correspondientes
+            if(page == -1 and count == 0):
+                self.updatePageTable(operationNumber)
+                page  = self._getPage(operationPart, operationNumber)
+            #Ya se encontraron todos los datos de la operacion
+            elif(page == -1):
+                return operation
+            #Verificar si esta en RAM si no:
+                #Agregar varas de paginacion
+            #else:
+            frame = self._translate(page)
+            for i in range(frame, (frame+4)):
+                operation += (chr(self._ram[i]))
+            operationPart += 1
+            count += 1
+
+
+    def _translate(self, page):
+        return page[4] * 4
         
-    #def _getOperation(self, operationNumber):
+    def runPagination(self, page):
         
-    #def _getPage(self, operationPart):
+        
+    def _getPage(self, operationPart, operationNUmber):
+        for i in self._pageTable:
+            if(i[0] == operationNUmber and i[2] == operationPart):
+                return i
+        return -1
 
 if(__name__ == '__main__'):
     mmu = MMU()
-    mmu.saveRAM("4+33",4)
+    mmu.updatePagedDisk( "4+2+4+3+1+3+5+43",0)
+    #mmu.addPage(mmu._pagedDisk[0])
+    print(mmu._pagedDisk)
+    print()
+    print(mmu._pageTable)
+    print(mmu.getOperation(0))
+    #Agrega a la page table
+    mmu._pageTable[0][4] = 0
+    mmu._pageTable[1][4] = 1
+    mmu._pageTable[2][4] = 2
+    mmu._pageTable[3][4] = 3
+    #Mete manualmente a la ram
+    mmu.saveRAM(mmu._pagedDisk[0]["parts"][0],0)
+    mmu.saveRAM(mmu._pagedDisk[0]["parts"][1], 4)
+    mmu.saveRAM(mmu._pagedDisk[0]["parts"][2], 8)
+    mmu.saveRAM(mmu._pagedDisk[0]["parts"][3], 12)
+    print(mmu.getOperation(0))
+
