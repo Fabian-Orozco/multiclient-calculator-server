@@ -29,7 +29,7 @@ def getNodesInfo():
             if (r[IPs_columnOne] == IP_7r):
                 # me, weight, neighbor
                 conns.append([r[NodeOne], r[PortOne], r[NodeTwo], r[IPs_columnTwo], r[PortTwo], r[Weight]])
-            elif (r[IPs_columnTwo] == IP_7r):
+            if (r[IPs_columnTwo] == IP_7r):
                 # me, weight, neighbor
                 conns.append([r[NodeTwo], r[PortTwo], r[NodeOne], r[IPs_columnOne], r[PortOne], r[Weight]])
     return conns
@@ -46,10 +46,7 @@ def createSh(conns):
         while (counter < len(conns)):
             nodeID = conns[counter][0]
             if (nodeID not in IDs_registers): # no repite nodos, para no abrir mas de uno
-                if (counter == 0):  # solo el primer nodo se conecta al server
-                    temp = f"\"screen -dmS \"{nodeID}-router\" python3 Router2.py router {IP_7r} {Port_server} {nodeID}\""
-                else:
-                    temp = f"\"screen -dmS \"{nodeID}-router\" python3 Router2.py router - - {conns[counter][0]}\""
+                temp = f"\"screen -dmS \"{nodeID}-router\" python3 Server.py router {IP_7r} {Port_server} {conns[counter][0]}\""
                 temp = temp[1:len(temp)-1:]  # quita comillas
                 configRouter_sh.write(f"{temp}\n")
                 IDs_registers = IDs_registers + conns[counter][0]  # registra la letra del nodo
