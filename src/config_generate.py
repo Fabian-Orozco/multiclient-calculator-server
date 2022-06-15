@@ -38,13 +38,11 @@ if __name__ == "__main__":
 
     # All available IPs:
     ips = ["172.16.202.167", "172.16.202.169", "172.16.202.180", "172.16.202.185", "172.16.202.191","172.16.202.192","172.16.202.44"]
-    # Local topology
+
+    # Modified topology
     if (len(sys.argv) > 2):
-        if (sys.argv[2] == "local" or sys.argv[2] == "127.0.0.1"):
-            ips = ["127.0.0.1"]
-        elif (sys.argv[2] == "172.16.202.167"):
-            ips = ["172.16.202.167"]
-    
+        ips = sys.argv[2:]
+        
     seed = random.randint(1,10)
     
 
