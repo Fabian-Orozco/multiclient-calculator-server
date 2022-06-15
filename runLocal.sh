@@ -9,7 +9,7 @@ sleep 0.3 # delay
 screen -dmS "Server" python3 Server.py server $2 $3
 sleep 0.3 # delay
 
-screen -dmS "Client" python3 Client.py -u admin -p admin1234
+screen -dmS "Client" python3 Client.py -u admin -p admin1234 $2 $3
 cd ..
 
 # Realiza el proceso de levantar los nodos.
