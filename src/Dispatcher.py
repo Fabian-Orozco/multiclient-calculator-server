@@ -45,19 +45,21 @@ class Dispatcher:
 		for operation in list:
 			# params: source , destination, packet, order, operation
 			msg = self.__formatter.operationToRouter(0, self.__allNodesIDs[destination], 0, 0, operation)
+			# aumenta contador: para intentar enviarlo a otro router en la otra iteracion
+			router = (router + 1) % len(self.__neighborsIDs)
+			destination = (destination + 1) % len(self.__allNodesIDs)
 			while(True):
 				try:
 					# intenta hacer send a un router aleatorio, lo recibirá solo si está en receive.
 					self.__neighborsSockets[router].send(msg.encode('UTF-8'))
 
-					printMsgTime(f"{TXT_GREEN}Dispatcher{TXT_RESET} will send {TXT_YELLOW} to router {destination} {TXT_RESET} the next message: {operation}")
-					# aumenta contador: para intentar enviarlo a otro router en la otra iteracion
-					router = (router + 1) % len(self.__neighborsIDs)
+					printMsgTime(f"{TXT_GREEN}Dispatcher{TXT_RESET} will send {TXT_YELLOW}to router {self.__neighborsIDs[router]}{TXT_RESET} | target: {TXT_YELLOW}{self.__allNodesIDs[destination]}{TXT_RESET} the next operation: {operation}")
 					break
 				except:
 					printErrors(f"{TXT_RED}Testing{TXT_RESET} could not send {TXT_YELLOW} to router {self.__neighborsIDs[router]}{TXT_RESET}")
-					# aumenta contador: para intentar enviarlo a otro router en la otra iteracion
-					router = (router + 1) % len(self.__neighborsIDs)
+				# aumenta contador: para intentar enviarlo a otro router en la otra iteracion
+				router = (router + 1) % len(self.__neighborsIDs)
+				destination = (destination + 1) % len(self.__allNodesIDs)
 
 	def shutDown(self):
 		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Shutting down dispatcher")
