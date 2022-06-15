@@ -1,8 +1,7 @@
-from random import random
+import random
 import socket
 import threading
 import os
-
 from Utilities import *
 import json
 from MessageFormatter import MessageFormatter
@@ -118,7 +117,7 @@ class Router:
 			sockStruct.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 			if (sockStruct.outQueue.empty() == False and sockStruct.connect()):
-					self.__resendMessages(sockStruct)
+				self.__resendMessages(sockStruct)
 
 			sockStruct.close()
 			sockStruct.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -146,16 +145,16 @@ class Router:
 						if (jsonMessage["destination"] == self.__routerID):
 							printMsgTime(f"Conexion con router {sockStruct.neighbordId} {TXT_RED}procesa{TXT_RESET}: {oper}")
 
-						else:
-							if (jsonMessage["destination"] in self.__routingTable["destiny"]):
-								# IMPORTANT: We need to check the table to know which connection can reach the destiny
-								tableIndex = self.__routingTable["destiny"].index(jsonMessage["destination"])
-								if (self.__routingTable["neighbord"][tableIndex] != "-"):
-									self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(message)
-								else:
-									# if we can't get to the destiny, the message ius assugned randomly to a connection
-									randomConnect = random.randint(1, len(self.__connections))
-									self.__connections[randomConnect].outQueue.put(message)
+						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
+							# IMPORTANT: We need to check the table to know which connection can reach the destiny
+							tableIndex = self.__routingTable["destiny"].index(jsonMessage["destination"])
+							if (self.__routingTable["neighbord"][tableIndex] != "-"):
+								self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(message)
+							else:
+								# if we can't get to the destiny, the message ius assugned randomly to a connection
+								randomConnect = random.randint(1, len(self.__connections))
+								self.__connections[randomConnect].outQueue.put(message)
+
 
 					elif ((jsonMessage["type"] == "vector")):
 						if(self.__updateTable(oper)):
@@ -276,7 +275,7 @@ class Router:
 					sock, address = self.sock.accept()
 					return sock
 				except:
-					sleep(0.1)
+					sleep(random.uniform(0,0.5))
 					tries += 1
 			return None
 
@@ -309,7 +308,7 @@ class Router:
 					self.sock.connect((self.neighbordIp, self.neighbordPort))
 					return True
 				except socket.error or socket.timeout:
-					sleep(0.5)
+					sleep(random.uniform(0,1))
 					tries += 1
 			return False
 
