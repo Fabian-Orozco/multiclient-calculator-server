@@ -2,8 +2,11 @@
 # Ejecuta el script de python que carga la topologia de nuestros nodos.
 # Corre el archivo sh que generó python.
 
+YELLOW='\033[33m'
+RESET='\033[0m'
+
 echo
-echo -n [Configurando routers...]
+printf "${YELLOW}[Configurando routers...]${RESET}"
 
 cd src
 
@@ -20,5 +23,5 @@ chmod +x start_router.sh
 screen -ls
 
 echo
-echo -n [Configuración finalizada]
+printf "${YELLOW}[Configuración finalizada]${RESET}"
 echo
