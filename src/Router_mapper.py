@@ -41,7 +41,7 @@ def getNodesInfo():
 def createSh(conns):
     with open("start_router.sh", "w") as configRouter_sh:
         counter = 0
-        configRouter_sh.write("#!/bin/bash\n\n#order: IP Port_server ID_router\n")  # header of file
+        configRouter_sh.write("#!/bin/bash\n\n# args order: [IP] [Port_server] [ID_router]\n")  # header of file
         IDs_registers = ""  # lleva el registro para no reescribir un nodo.
         while (counter < len(conns)):
             nodeID = conns[counter][0]
