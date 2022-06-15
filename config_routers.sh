@@ -1,19 +1,24 @@
 #!/bin/bash 
+# Ejecuta el script de python que carga la topologia de nuestros nodos.
+# Corre el archivo sh que generó python.
+
+echo
 echo -n [Configurando routers...]
 
 cd src
 
-# args: topologyFilename IP Port_server
-# python3 Router_mapper.py topologia.csv 172.16.202.167 8081
-
+# args: [topologyFilename] [IP] [Port_server]
 python3 Router_mapper.py $1 $2 $3
 
-# for local tests
-# python3 Router_mapper.py topologia.csv 127.0.0.1 8081
-
+# Da permisos de ejecución
 chmod +x start_router.sh
+
+# Script generado por python. Corre cada nodo del equipo.
 ./start_router.sh
 
+# Muestra el estado de las terminales generadas
 screen -ls
+
 echo
 echo -n [Configuración finalizada]
+echo
