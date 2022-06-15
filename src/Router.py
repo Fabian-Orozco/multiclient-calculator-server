@@ -149,11 +149,11 @@ class Router:
 							# IMPORTANT: We need to check the table to know which connection can reach the destiny
 							tableIndex = self.__routingTable["destiny"].index(jsonMessage["destination"])
 							if (self.__routingTable["neighbord"][tableIndex] != "-"):
-								self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(message)
+								self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(oper)
 							else:
 								# if we can't get to the destiny, the message ius assugned randomly to a connection
 								randomConnect = random.randint(1, len(self.__connections))
-								self.__connections[randomConnect].outQueue.put(message)
+								self.__connections[randomConnect].outQueue.put(oper)
 
 
 					elif ((jsonMessage["type"] == "vector")):
