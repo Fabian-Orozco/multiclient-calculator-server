@@ -1,5 +1,5 @@
 # ejecutar con
-# python router_mapper.py topologyFilename IP Port_server
+# python Router_mapper.py topologyFilename IP Port_server
 
 import csv
 import sys
