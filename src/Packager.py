@@ -2,9 +2,11 @@ from Utilities import *
 
 class Packager:
     VALID_SYMBOLS = {"(", ")","+", "-", "*", "/", "s", "^"}
-    NUMBERS = {"1","2","3","4","5","6","7","8","9","0"}
+    VALID_OPERATORS = {"+", "-", "*", "/", "^"}
+    ENDLINE = "x"      # Va al inicio de la pila, y en medio de cada operacion o numero enviado a los nodos
 
     ## retorna el tope de la pila sin sacarlo
+    #
     #  @param pila la pila de la cual se quiere saber el tope
     #  @return el tope de la pila, si el tope es una funcion sqrt, solo retorna "s" para el manejo de la precedencia
     def inspect(self, pila):
@@ -15,46 +17,6 @@ class Packager:
             return "s"
         else:
             return aux
-
-    ## transforma la operacion infija entrante en una sufija
-    #  @param operation la operacion infija a transformar, los operandos y los numeros estan separados por espacios
-    #  @return un string con la operacion sufija separada por espacios 
-    def infix_to_suffix(self, operation):
-        precedence = {}         # Diccionario que asigna un valor de prioridad a un operador "s" es para la funcion sqrt
-        precedence["s"] = 4
-        precedence["^"] = 3
-        precedence["*"] = 3
-        precedence["/"] = 3
-        precedence["+"] = 2
-        precedence["-"] = 2
-        precedence["("] = 1
-        operatorStack = []      # Pila donde almacenamos los operadores
-        suffixOperation = []    # Lista donde vamos almacenando la operacion sufija
-        entries = operation.split() # Lista con las entradas de la operacion (operacion dividida)
-        for entry in entries:
-            if (((entry in self.VALID_SYMBOLS) == False) and (entry[0] != "s")):     # La entrada es un numero
-                suffixOperation.append(entry)
-            elif entry == "(":                                                  # La entrada es un "(", lo agregamos al stack
-                operatorStack.append(entry)
-            elif entry == ")":                                                  # La entrada es un ")"
-                tope = operatorStack.pop()
-                while tope != "(":                      # Mientras lo que saquemos del operator stack no sea un "(" seguimos sacando
-                    suffixOperation.append(tope)        # Lo agregamos a la respuesta
-                    tope = operatorStack.pop()
-            else:                                       # Es un operador
-                if(entry[0] == "s"):
-                    while(len(operatorStack) != 0) and (precedence[self.inspect(operatorStack)] >= precedence[entry[0]]): 
-                        suffixOperation.append(operatorStack.pop())
-                    operatorStack.append(entry)
-                else:
-                    while(len(operatorStack) != 0) and (precedence[self.inspect(operatorStack)] >= precedence[entry]):  # Extraemos los operadores con igual o mayor precedencia, luego ingresamos el operador
-                        suffixOperation.append(operatorStack.pop())
-                    operatorStack.append(entry)
-
-        while len(operatorStack) != 0:                  # Enviamos los operadores faltantes en la pila
-            suffixOperation.append(operatorStack.pop())
-        
-        return " ".join(suffixOperation)
 
     ## si el signo es un "-" se necesita saber si funciona como operador o como signo, si es como signo se debe mantener junto al numero
     #  Por ejemplo: si hay un "-5-5" se tiene que dividir como "-5 - 5"
@@ -72,7 +34,8 @@ class Packager:
         # -5
         if ((index - 1) < 0):
             index += 1
-            while string[index] in self.NUMBERS:        # recorre el string hasta que se termine el numero
+            while string[index].isnumeric():
+            #while string[index] in self.NUMBERS:        # recorre el string hasta que se termine el numero
                 answer = answer + string[index]
                 index += 1
             index -= 1
@@ -80,7 +43,8 @@ class Packager:
         elif ((index - 1) >= 0):
             if (string[index - 1] == "("):
                 index += 1
-                while string[index] in self.NUMBERS:    # recorre el string hasta que se termine el numero
+                while string[index].isnumeric():
+                #while string[index] in self.NUMBERS:    # recorre el string hasta que se termine el numero
                     answer = answer + string[index]
                     index += 1
                 index -= 1
@@ -90,6 +54,7 @@ class Packager:
     
     ## funcion para insertar un espacio entre las partes de la operacion, entre los operandos y los operadores
     #  esto se realiza para poder identificar los numeros de los operadores a la hora de llamar al metodo que lo combierte a sufijo
+    #
     #  @param string operacion a la que se le debe agregar espacios
     #  @return operacion con los espacios asignados
     def insertSpaces(self, string):
@@ -97,9 +62,9 @@ class Packager:
         index = 0
         while index < len(string):
             current = string[index]
-            if(current in self.NUMBERS):                # Es un numero
+            if(current.isnumeric()):                # Es un numero
                 for j in range(index+1,len(string)):
-                    if(string[j] in self.NUMBERS):
+                    if(string[j].isnumeric()):
                         current += string[j]
                         index = index + 1
                     else:
@@ -119,19 +84,119 @@ class Packager:
 
         return ' '.join(list)
 
+    ## transforma la operacion infija entrante en una sufija
+    #
+    #  @param operation la operacion infija a transformar, los operandos y los numeros estan separados por espacios
+    #  @return un string con la operacion sufija separada por espacios 
+    def infix_to_suffix(self, operation):
+        precedence = {}         # Diccionario que asigna un valor de prioridad a un operador "s" es para la funcion sqrt
+        precedence["^"] = 3
+        precedence["*"] = 3
+        precedence["/"] = 3
+        precedence["+"] = 2
+        precedence["-"] = 2
+        precedence["("] = 1
+        operatorStack = []      # Pila donde almacenamos los operadores
+        suffixOperation = []    # Lista donde vamos almacenando la operacion sufija
+        inputSpaced = self.insertSpaces(operation)        # Inserta espacios entre caracteres
+        print(f"Operacion: {operation}")   
+
+        entries = inputSpaced.split() # Lista con las entradas de la operacion (operacion dividida)
+        for entry in entries:
+            if (((entry in self.VALID_SYMBOLS) == False)):     # La entrada es un numero
+                suffixOperation.append(entry)
+            elif entry == "(":                                               # La entrada es un "(", lo agregamos al stack
+                operatorStack.append(entry)
+            elif entry == ")":                                                  # La entrada es un ")"
+                tope = operatorStack.pop()
+                while tope != "(":                      # Mientras lo que saquemos del operator stack no sea un "(" seguimos sacando
+                    suffixOperation.append(tope)        # Lo agregamos a la respuesta
+                    tope = operatorStack.pop()
+            else:                                       # Es un operador
+                while(len(operatorStack) != 0) and \
+                    (precedence[self.inspect(operatorStack)] >= precedence[entry]):  # Extraemos los operadores con igual o mayor precedencia, luego ingresamos el operador
+                        suffixOperation.append(operatorStack.pop())
+                operatorStack.append(entry)
+
+        while len(operatorStack) != 0:                  # Enviamos los operadores faltantes en la pila
+            suffixOperation.append(operatorStack.pop())
+
+        return " ".join(suffixOperation)
+
+    ## devuelve si la operacion es operable o si solo es un numero
+    #  
+    #  @param operation la operacion a evaluar
+    #  @return True si el string es operable, False si no
+    def isOperable(self, operation):
+        if ((operation[0] == "(") or operation.isnumeric()):
+            return True
+        else:
+            return False
+
+    ## divide la operacion entrante entre varias operaciones pequenas
+    #  para realizarlo utiliza una pila que se encarga de, mediante varias reglas, dividir las operaciones aunque tengan dependencia
+    #  
+    #  @param suffix operacion de tipo sufija la cual sera la que se dividira
+    #  @return lista de string con las operaciones pequenas
+    def split(self, operation):
+        
+        suffixOperation = self.infix_to_suffix(operation)   # convierte la operacion a sufija con espacios
+
+        print(f"Operacion sufija: {suffixOperation}")
+        operation = suffixOperation.split()                 # creo lista con las partes de la operacion
+        length = len(operation)
+
+        stack = []                # Pila para poder dividir la operacion
+        stack.append(self.ENDLINE)
+
+        index = 0
+        while index < length:       # recorro la operacion
+            data = operation[index]
+            if data.isnumeric() or data[0] == "s":  # si es numero o sqrt lo agrego a la pila
+                stack.append(data)
+            else:
+                top = stack.pop()
+
+                if top.isnumeric() or top[0] == "s":    # el tope es un numero
+                    top2 = stack.pop()
+                    if top2.isnumeric() or top2[0] == "s":  # el segundo tope es un numero
+                        data = "(" + top2 + data + top + ")"
+                        stack.append(data)
+                        stack.append(self.ENDLINE)
+                    else:                                   # el segundo tope es un ENDLINE
+                        stack.append(top2)
+                        data = data + top
+                        stack.append(data)
+                        stack.append(self.ENDLINE)
+                else:                                   # el tope es un ENDLINE
+                    stack.append(top)
+                    iStack = len(stack) - 1
+
+                    while ((self.isOperable(stack[iStack]) == False) and (stack[iStack].isnumeric() == False)): # recorro hasta encontrar donde va el operador
+                        iStack -= 1
+                    
+                    aux = stack[iStack]
+                    stack.remove(aux)
+                    data = data + aux
+                    stack.insert(iStack,data)
+            index += 1
+
+        return stack
+
 ## Funcion para correr el programa
 def main():
     packager = Packager()
 
     while True:
-        entry = input(" > ingrese la operación: ")
-        if entry == "q": break
-        inputSpaced = packager.insertSpaces(entry)        # Inserta espacios entre caracteres
-        print(f"Antes: {entry}\nDespues:{inputSpaced}")   
+        operation = input(" > ingrese la operación: ")
+        
+        if operation == "q": break
 
-        suffix = packager.infix_to_suffix(inputSpaced)        # Devuelve operacion sufija
+        listing = packager.split(operation)
 
-        print(f"Operacion sufija: {suffix}")
+        print(f"Lista de operaciones: {listing}")
+
+    print(list)
 
 ## Para ejecutar python3 Packager.py
 #  luego ingrese la operacion
