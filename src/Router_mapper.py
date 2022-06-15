@@ -3,6 +3,7 @@
 
 import csv
 import sys
+from Utilities import *
 
 # valores por defecto
 topology_filename = "topologia.csv"
@@ -76,13 +77,12 @@ def createNeighborsCsv(conns):
 # Crea el archivo que correrá los nodos
 # Crea el archivo de vecinos de nuestros nodos
 def main():
-    print("\n\nRouter mapper Info:\ntopology_filename: " + topology_filename + "\nIP_7r: " + IP_7r + "\nPort_server: " + Port_server + "\n")
+    print(f"\n\nRouter mapper Info:\n\tTopology filename: {TXT_CYAN}{topology_filename}{TXT_RESET} \n\tIP_7r: {TXT_CYAN}{IP_7r}{TXT_RESET} \n\tPort_server: {TXT_CYAN}{Port_server}{TXT_RESET}")
 
     conns = getNodesInfo()
     runningNodes = createSh(conns)
-    print(len(runningNodes) , "online routers of 7raspado: " + runningNodes)
+    print(f"{TXT_GREEN}{len(runningNodes)} online routers{TXT_RESET} of 7raspado: {TXT_YELLOW}{runningNodes}{TXT_RESET}\n")
     createNeighborsCsv(conns)
-    print("neighbors are ready to read for each router")
 
 
 if __name__ == "__main__":
