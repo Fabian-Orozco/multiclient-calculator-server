@@ -137,7 +137,7 @@ class Router:
 			message = sockStruct.inQueue.get(block=False)
 			if (message == "threadStop"):
 				return "threadStop"
-			operations = self.__splitMessage()
+			operations = self.__splitMessage(message)
 			for oper in operations:
 				try:
 					jsonMessage = json.loads(oper)
