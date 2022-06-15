@@ -5,7 +5,7 @@ cd src
 python3 config_generate.py $1 $2 > topologia.csv
 sleep 0.3
 
-screen -dmS "Server" python3 Server.py server
+screen -dmS "Server" python3 Server.py server $2 $3
 sleep 0.3
 
 screen -dmS "User" python3 Client.py -u admin -p admin1234
