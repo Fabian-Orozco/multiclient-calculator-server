@@ -46,8 +46,9 @@ def createSh(conns):
         while (counter < len(conns)):
             nodeID = conns[counter][0]
             if (nodeID not in IDs_registers): # no repite nodos, para no abrir mas de uno
-                temp = f"\"screen -dmS \"{nodeID}-router\" python3 Server.py router {IP_7r} {Port_server} {conns[counter][0]}\""
+                temp = f"\"screen -dmS \"{nodeID}-router\" python3 Server.py router {IP_7r} {Port_server} {nodeID}\""
                 temp = temp[1:len(temp)-1:]  # quita comillas
+                temp += "\nsleep 0.3"
                 configRouter_sh.write(f"{temp}\n")
                 IDs_registers = IDs_registers + conns[counter][0]  # registra la letra del nodo
             counter = counter + 1
