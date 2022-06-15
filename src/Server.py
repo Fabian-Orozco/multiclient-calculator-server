@@ -11,7 +11,6 @@ import sys
 from time import sleep
 from Router import Router
 
-
 class Server:
 	def __init__(self, host, port):
 		#=========================================================================================#
@@ -21,9 +20,11 @@ class Server:
 		self.__formatter = MessageFormatter()   # class to create messages with format
 		self.__maxTimeOut = 300                                                              # max timeout of client inactivity in seconds
 		self.__welcomingSocket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)           # server welcoming socket
+		self.__welcomingSocket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
 		self.__requestsQueue = queue.Queue()                                                 # server requests queue
 		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
+		self.__dispatcher = Dispatcher() 				# dispatcher that sends operations to routers
 		#=========================================================================================#
 
 		# threads list to be able to join them before closing
@@ -97,6 +98,7 @@ class Server:
 		elif (jsonMessage["type"] ==  "router"):
 			# thread runs as a manager for routers connections
 			self.handleRouterConnection(sock, address, connectionType)
+			
 
 	# @brief Method to handle a router connection 
 	# @details works as a consumer thread that consumes requests from the server queue and calls the dispatcher
@@ -107,8 +109,7 @@ class Server:
 		routerInfo = json.loads(message)
 		routerID = routerInfo["id"]
 		printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Router {routerID} | ip:{address[0]} | port:{address[1]}")
-		dispatch = Dispatcher(sock, routerID)
-		self.__consumeRequests(dispatch)
+		self.__dispatcher.updateRoutersAvailables(sock, routerID)
 
 	# @brief Method to handle a client connection 
 	# @details receives operation requests form the cliente and push them into the requests queue of the server \
@@ -239,7 +240,7 @@ class Server:
 
 	# @brief Method to consume from the requests queue
 	# @param dispatcher object that divides the requests a sends them to the router network
-	def __consumeRequests(self, dispacther):
+	def __consumeRequests(self):
 		request = ""
 		while (True):
 			# Get the next data to consume, or block while queue is empty
@@ -248,14 +249,27 @@ class Server:
 			if (request  == "stop"):
 				break
 			# dispatcher will be called in this section
-			dispacther.dispatch(request)
-		dispacther.shutDown()
+			self.__dispatcher.dispatch(request)
+		# self.__dispatcher.shutDown()
 
 	# @brief method to run the server
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
 		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__serverHost} | port: {self.__serverPort}{TXT_RESET}")
+		self.__consume()
 		self.__waitForConnection()
+
+	# @brief consumes from the request queue to dispatch to the routers
+	def __consume(self):
+		# creates thread to dispatch requests
+		thread = threading.Thread(target = self.__consumeRequests)
+		self.__threadsArray.append(thread)
+
+		# deamon thread so it destroys itself when it has finished working
+		thread.daemon = True
+
+		# thread starts to work
+		thread.start()
 
 
 if(__name__ == '__main__'):
