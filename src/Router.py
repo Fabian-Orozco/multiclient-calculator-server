@@ -194,13 +194,10 @@ class Router:
 			if (connInfo["target"] != self.__routerID):
 				tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
 				if (self.__routingTable["weights"][tableRowIndex] == -1):
-					print("Poner fijo " + connInfo["target"] + " " + str(connInfo["weight"]))
 					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
 					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
 					isUpdated = True
-
 				elif(connInfo["weight"] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex]):
-					print("UPDATE "  + connInfo["target"] + " " + str(connInfo["weight"]))
 					isUpdated = True
 		return isUpdated
 
