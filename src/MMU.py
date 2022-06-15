@@ -1,3 +1,5 @@
+from itertools import count
+
 
 KEY_TO_FRAME = 1
 CELDAS_EN_RAM = 4
@@ -6,6 +8,7 @@ class MMU:
     def __init__(self):
         self._pageTable = []
         self._pagedDisk = []
+        self._pagesInRam = []
         self._ram = bytearray(16)
     
     def getFrame(self, index):
@@ -54,9 +57,10 @@ class MMU:
             #Ya se encontraron todos los datos de la operacion
             elif(page == -1):
                 return operation
-            #Verificar si esta en RAM si no:
+            if(self._pageTable[page][3] == False):
                 #Agregar varas de paginacion
-            #else:
+                self.runPagination(page)
+
             frame = self._translate(page)
             for i in range(frame, (frame+4)):
                 operation += (chr(self._ram[i]))
@@ -65,14 +69,41 @@ class MMU:
 
 
     def _translate(self, page):
-        return page[4] * 4
-        
+        return self._pageTable[page][4] * 4
+
+      
     def runPagination(self, page):
-        
-        
+    #Paginacion por espacio de trabajo
+        while(True):
+            pagedOperation = self._pagedDisk[self._pageTable[page][0]]
+            if(len(self._pagesInRam) < 4):
+                self._pageTable[page][3] = True
+                self._pageTable[page][4] = len(self._pagesInRam)
+                self._pagesInRam.append(page)
+                operationPart = pagedOperation["parts"][self._pageTable[page][2]]
+                self.saveRAM(operationPart, self._pageTable[page][4]*4)
+                #Siguiente pagina de esa operacion a poner en Ram
+                page = self._getPage(self._pageTable[page][2]+1, self._pageTable[page][0]) 
+                if(page == -1):
+                    return
+  
+            for i in self._pagesInRam:
+                if(self._pageTable[i][1] == True and self._pageTable[i][3] == True):
+                    self._pageTable[i][3] = False
+                    self._pageTable[page][3] = True
+                    self._pageTable[page][4] = self._pageTable[i][4]
+                    #Se debe cargar a Ram los datos
+                    operationPart = pagedOperation["parts"][self._pageTable[page][2]]
+                    self.saveRAM(operationPart, self._pageTable[page][4]*4)
+                    page = self._getPage(self._pageTable[page][2]+1, self._pageTable[page][0])
+                    if(page == -1):
+                        return
+            return
+
+ 
     def _getPage(self, operationPart, operationNUmber):
-        for i in self._pageTable:
-            if(i[0] == operationNUmber and i[2] == operationPart):
+        for i in range(len(self._pageTable)):
+            if(self._pageTable[i][0] == operationNUmber and self._pageTable[i][2] == operationPart):
                 return i
         return -1
 
@@ -84,15 +115,5 @@ if(__name__ == '__main__'):
     print()
     print(mmu._pageTable)
     print(mmu.getOperation(0))
-    #Agrega a la page table
-    mmu._pageTable[0][4] = 0
-    mmu._pageTable[1][4] = 1
-    mmu._pageTable[2][4] = 2
-    mmu._pageTable[3][4] = 3
-    #Mete manualmente a la ram
-    mmu.saveRAM(mmu._pagedDisk[0]["parts"][0],0)
-    mmu.saveRAM(mmu._pagedDisk[0]["parts"][1], 4)
-    mmu.saveRAM(mmu._pagedDisk[0]["parts"][2], 8)
-    mmu.saveRAM(mmu._pagedDisk[0]["parts"][3], 12)
-    print(mmu.getOperation(0))
+
 
