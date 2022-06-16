@@ -99,7 +99,7 @@ class Packager:
         operatorStack = []      # Pila donde almacenamos los operadores
         suffixOperation = []    # Lista donde vamos almacenando la operacion sufija
         inputSpaced = self.__insertSpaces(operation)        # Inserta espacios entre caracteres
-        print(f"Operacion: {operation}")   
+        # print(f"Operacion: {operation}")   
 
         entries = inputSpaced.split() # Lista con las entradas de la operacion (operacion dividida)
         for entry in entries:
@@ -200,7 +200,7 @@ class Packager:
 
     def run(self, operation, id):
         listing = self.__split(operation)
-        print(f"Lista: {listing}")
+        # print(f"Lista: {listing}")
         packages = self.__package(listing, id)
 
         return packages
