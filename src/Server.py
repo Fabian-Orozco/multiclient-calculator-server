@@ -248,8 +248,15 @@ class Server:
 
 			if (request  == "stop"):
 				break
-			# dispatcher will be called in this section
-			self.__dispatcher.dispatch(request)
+
+			# carga json para ver el tipo de request
+			type = json.loads(request)
+			if type["request"] != "read":
+				# dispatcher will be called in this section
+				self.__dispatcher.dispatch(request)
+			else: # TODO ETAPA 4
+				printMsgTime(f"The {TXT_RED}read request{TXT_RESET} is not dispatched. {TXT_CYAN}Under construction.{TXT_RESET}")
+			
 		self.__dispatcher.shutDown()
 
 	# @brief method to run the server
