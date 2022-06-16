@@ -250,7 +250,7 @@ class Server:
 				break
 			# dispatcher will be called in this section
 			self.__dispatcher.dispatch(request)
-		# self.__dispatcher.shutDown()
+		self.__dispatcher.shutDown()
 
 	# @brief method to run the server
 	def run(self):
