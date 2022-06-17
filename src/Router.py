@@ -1,4 +1,4 @@
-from http import server
+import random
 import socket
 import threading
 import os
@@ -16,7 +16,7 @@ class Router:
 	def __init__(self, serverIp, serverPort, id):
 		# this router info
 		self.__routerID = id
-		self.__ownIp = socket.gethostbyname(socket.gethostname())
+		# self.__ownIp = socket.gethostbyname(socket.gethostname())
 
 		# connection to server info
 		self.__serverIP = serverIp # maybe this will deleted
@@ -26,8 +26,7 @@ class Router:
 			self.__serverPort = serverPort
 		# self.__socketServer = self.SocketStruct(self.__ownIp, None, serverIp, serverPort, "server")
 		
-		self.__socketServer = self.SocketStruct("127.0.0.1", None, serverIp, serverPort, "server") # TESTING
-
+		self.__socketServer = self.SocketStruct(serverIp, None, serverIp, serverPort, "server")
 		# Info to connect to other routers
 		self.__connections = dict({"server":self.__socketServer})
 		self.__connectionsFile = "neighbors.csv"
@@ -39,6 +38,9 @@ class Router:
 
 		# thread management
 		self.threadsArray = []
+
+		# message format
+		self.__formatter = MessageFormatter()
 
 	def __loadAvailableNode(self):
 		with open(self.__topologyFile) as topology:
@@ -56,7 +58,7 @@ class Router:
 			self.__socketServer.sendMsg("{\"type\":\"router\",\"id\":\""+ self.__routerID + "\"}")
 
 	def __runConnectionToServer(self, sockStruct):
-		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Thread handles conection with {sockStruct.neighbordId}")
+		printMsgTime(f"Conection with {sockStruct.neighbordId} {TXT_GREEN}established{TXT_RESET}")
 		while(True):
 			try:
 				self.__receiveOperations(sockStruct, sockStruct)
@@ -64,8 +66,6 @@ class Router:
 				stopCondition = self.__processMessages(sockStruct)
 				if (stopCondition == "threadStop"):
 					return
-				if (sockStruct.outQueue.empty() == False):
-					self.__resendMessages(sockStruct)
 			except KeyboardInterrupt:
 				self.__shutDown()
 
@@ -74,12 +74,10 @@ class Router:
 			file = csv.reader(neighbords)
 			for row in file:  # each row of the file
 				if (row[0] == self.__routerID):
-					newSocket = self.SocketStruct(self.__ownIp, row[1], row[3], row[4], row[2], int(row[5]))
+					newSocket = self.SocketStruct(self.__serverIP, row[1], row[3], row[4], row[2], int(row[5]))
 					self.__connections[row[2]] = newSocket
 
 	def __createthreads(self):
-
-		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Creating threads")
 		connectionsList = self.__connections.values()
 		try:
 			for connection in connectionsList:
@@ -96,15 +94,17 @@ class Router:
 
 
 	def __runConnection(self, sockStruct):
-		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Thread handles conection with {sockStruct.neighbordId}")
+		printMsgTime(f"Conection with {sockStruct.neighbordId} {TXT_GREEN}established{TXT_RESET}")
 		while(True):
 			sockStruct.bind()
 			sockStruct.listen()
 			newSock = sockStruct.accept()
+
 			if (newSock != None):
 				newSockStruct = self.SocketStruct()
 				newSockStruct.sock = newSock
-				self.__receiveOperations(sockStruct)
+				newSockStruct.neighbordId = sockStruct.neighbordId
+				self.__receiveOperations(newSockStruct, sockStruct)
 				newSockStruct.close()
 
 			stopCondition = self.__processMessages(sockStruct)
@@ -113,12 +113,16 @@ class Router:
 
 			sockStruct.close()
 			sockStruct.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sockStruct.sock.setblocking(0)
+			sockStruct.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 			if (sockStruct.outQueue.empty() == False and sockStruct.connect()):
 				self.__resendMessages(sockStruct)
 
 			sockStruct.close()
 			sockStruct.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+			sockStruct.sock.setblocking(0)
+			sockStruct.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 	def __receiveOperations(self, receiver, sockStruct):
 		while(True):
@@ -128,37 +132,48 @@ class Router:
 			sockStruct.inQueue.put(operation)
 
 	def __processMessages(self, sockStruct):
-		# printMsgTime(f"{TXT_RED}Testing{TXT_RESET} connection with router {sockStruct.neighbordId} is processing messages")
 		while (not sockStruct.inQueue.empty()):
 			message = sockStruct.inQueue.get(block=False)
-
 			if (message == "threadStop"):
 				return "threadStop"
+			operations = self.__splitMessage(message)
+			for oper in operations:
+				try:
+					jsonMessage = json.loads(oper)
+					if (jsonMessage["type"] == "operation"):
 
-			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} connection with router {sockStruct.neighbordId} is processing: {message}")
-			jsonMessage = json.loads(message)
+						if (jsonMessage["destination"] == self.__routerID):
+							printMsgTime(f"Conexion con router {sockStruct.neighbordId} {TXT_RED}procesa{TXT_RESET}: {oper}")
 
-			if (jsonMessage["type"] == "operation"):
+						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
+							# IMPORTANT: We need to check the table to know which connection can reach the destiny
+							tableIndex = self.__routingTable["destiny"].index(jsonMessage["destination"])
+							if (self.__routingTable["neighbord"][tableIndex] != "-"):
+								self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(oper)
+							else:
+								# if we can't get to the destiny, the message ius assugned randomly to a connection
+								randomConnect = random.randint(1, len(self.__connections))
+								self.__connections[randomConnect].outQueue.put(oper)
 
-				if (jsonMessage["destination"] == self.__routerID):
-					printMsgTime(f"{TXT_RED}Testing{TXT_RESET} Parte de oper conexion con router {sockStruct.neighbordId} mensaje: {message}")
 
-				else:
-					if (jsonMessage["destination"] in self.__connections):
-						# IMPORTANT: We need to check the table to know which connection can reach the destiny
-						# right now this doens't check the table
-						self.__connections[jsonMessage["destination"]].outQueue.append(message)
+					elif ((jsonMessage["type"] == "vector")):
+						if(self.__updateTable(oper)):
+							self.__broadcastTable()
+				except:
+					printMsgTime(f"Connection with router {sockStruct.neighbordId} received an {TXT_RED}unknown message{TXT_RESET}: {oper}")
 
-			elif ((jsonMessage["type"] == "vector")):
-				self.__updateTable(jsonMessage)
-				self.__broadcastTable()
 
-			else:
-				printMsgTime(f"{TXT_RED}Testing{TXT_RESET} connection with router {sockStruct.neighbordId} received an unknown message: {message}")
-		
+
+	def __splitMessage(self, message):
+		message =  message[1:len(message)-1]
+		split = message.split("}{")
+		counter = 0
+		for counter in range(0,len(split)):
+			split[counter] = "{" + split[counter] + "}"
+		return split
 
 	def __resendMessages(self, sockStruct):
-		while(sockStruct.outQueue.empty() != False):
+		while(sockStruct.outQueue.empty() != True):
 			sockStruct.sendMsg(sockStruct.outQueue.get())
 
 	def __createTable(self):
@@ -171,39 +186,28 @@ class Router:
 				tableRowIndex = self.__routingTable["destiny"].index(conn.neighbordId)
 				self.__routingTable["neighbord"][tableRowIndex] = conn.neighbordId
 				self.__routingTable["weights"][tableRowIndex] = conn.weight
-		print("Original")
-		print(self.__routingTable["destiny"])
-		print(self.__routingTable["neighbord"])
-		print(self.__routingTable["weights"])
-
-
 
 	def __updateTable(self, vector):
-		test = "{\"type\":\"vector\",\"node\":\"A\",\"conn\":[{\"target\":\"B\",\"weight\":3},{\"target\":\"C\",\"weight\":23},{\"target\":\"C\",\"weight\":1}]}"
-		table = json.loads(test)
+		table = json.loads(vector)
+		isUpdated = False
 		for connInfo in table["conn"]:
-			print("\n")
-			tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
-			if (self.__routingTable["weights"][tableRowIndex] == -1):
-				print("Poner fijo " + connInfo["target"] + " " + str(connInfo["weight"]))
-				self.__routingTable["neighbord"][tableRowIndex] = table["node"]
-				self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
-
-			elif(connInfo["weight"] < self.__routingTable["weights"][tableRowIndex]):
-				print("UPDATE "  + connInfo["target"] + " " + str(connInfo["weight"]))
-			print(self.__routingTable["destiny"])
-			print(self.__routingTable["neighbord"])
-			print(self.__routingTable["weights"])
+			if (connInfo["target"] != self.__routerID):
+				tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
+				if (self.__routingTable["weights"][tableRowIndex] == -1):
+					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
+					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
+					isUpdated = True
+				elif(connInfo["weight"] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex]):
+					isUpdated = True
+		return isUpdated
 
 
 	def __broadcastTable(self):
-		x = 0
-		strTable = "Esto es una tabla :v"
+		strTable = self.__formatter.vectorFormat(self.__routingTable, self.__routerID)
 		connectionsList = self.__connections.values()
 		for conn in connectionsList:
 			if (conn.neighbordId != "server"):
 				conn.outQueue.put(strTable)
-				print("Lo que le puso a la cola de " + conn.neighbordId + " \"" + conn.outQueue.get() + "\"")
 
 	def __shutDown(self):
 		# shutdown the server closes the socket
@@ -223,10 +227,9 @@ class Router:
 		self.__createSockets(self.__connectionsFile)
 		self.__createTable()
 		self.__broadcastTable()
-		# self.__updateTable("hola")
-		# self.__createthreads()
-		# self.__connectToServer()
-		# self.__runConnectionToServer(self.__connections["server"])
+		self.__createthreads()
+		self.__connectToServer()
+		self.__runConnectionToServer(self.__connections["server"])
 
 
 	class SocketStruct:
@@ -249,14 +252,12 @@ class Router:
 			# connection info
 			self.weight = connectionWeight
 			self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-			self.sock.setblocking(0) # None blocking socket
+			self.sock.setblocking(False) # None blocking socket
+			self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 
 			# messages queues
 			self.inQueue = queue.Queue()
 			self.outQueue = queue.Queue()
-
-			printMsgTime(f"{TXT_RED}Testing:{TXT_RESET} Created socket to router {self.neighbordId}, ip:{self.neighbordIp} | port:{self.neighbordPort}.")
-
 
 		def bind(self):
 			self.sock.bind((self.thisRouterIp, self.thisRouterPort))
@@ -265,21 +266,27 @@ class Router:
 			self.sock.listen()
 
 		def accept(self):
-			try:
-				sock, address = self.sock.accept()
-				return sock
-			except:
-				return None
+			tries = 0
+			while(tries < 10):
+				try:
+					sock, address = self.sock.accept()
+					return sock
+				except:
+					sleep(random.uniform(0,0.5))
+					tries += 1
+			return None
 
 		def sendMsg(self, message):
-			printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message} to router {self.neighbordId}")
+			printMsgTime(f"{TXT_RED}Sent:{TXT_RESET} {message} {TXT_YELLOW}to router {self.neighbordId}{TXT_RESET}")
 			self.sock.send(message.encode('UTF-8'))
 
 		def recvMsg(self):
 			message = ""
 			try:
 				message = self.sock.recv(4096)
-				printMsgTime(f"{TXT_RED}Testing{TXT_RESET} received: {message} from router {self.neighbordId}")
+				if (not message):
+					return "timeout"
+				printMsgTime(f"{TXT_RED}Received:{TXT_RESET} {message} {TXT_YELLOW}from router {self.neighbordId}{TXT_RESET}")
 				return message.decode('UTF-8')
 			except socket.error:
 				return "timeout"
@@ -292,11 +299,15 @@ class Router:
 				return self.__connectToRouter()
 
 		def __connectToRouter(self):
-			try:
-				self.sock.connect((self.neighbordIp, self.neighbordPort))
-				return True
-			except socket.error or socket.timeout:
-				return False
+			tries = 0
+			while(tries < 10):
+				try:
+					self.sock.connect((self.neighbordIp, self.neighbordPort))
+					return True
+				except socket.error or socket.timeout:
+					sleep(random.uniform(0,1))
+					tries += 1
+			return False
 
 		def __connectToServer(self):
 			if (self.neighbordIp != "-" or self.neighbordPort != "-"):
@@ -317,7 +328,7 @@ class Router:
 
 def main():
 	print(socket.gethostbyname(socket.gethostname()))
-	test =Router("127.0.0.1", "8080", "J")
+	test =Router("127.0.0.1", "8080", "B")
 	test.run()
 
 if (__name__ == '__main__'):

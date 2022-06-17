@@ -1,8 +1,9 @@
 # ejecutar con
-# python router_mapper.py topologyFilename IP Port_server
+# python Router_mapper.py topologyFilename IP Port_server
 
 import csv
 import sys
+from Utilities import *
 
 # valores por defecto
 topology_filename = "topologia.csv"
@@ -41,13 +42,14 @@ def getNodesInfo():
 def createSh(conns):
     with open("start_router.sh", "w") as configRouter_sh:
         counter = 0
-        configRouter_sh.write("#!/bin/bash\n\n#order: IP Port_server ID_router\n")  # header of file
+        configRouter_sh.write("#!/bin/bash\n\n# args order: [IP] [Port_server] [ID_router]\n")  # header of file
         IDs_registers = ""  # lleva el registro para no reescribir un nodo.
         while (counter < len(conns)):
             nodeID = conns[counter][0]
             if (nodeID not in IDs_registers): # no repite nodos, para no abrir mas de uno
-                temp = f"\"screen -dmS \"{nodeID}-router\" python3 Server.py router {IP_7r} {Port_server} {conns[counter][0]}\""
+                temp = f"\"screen -dmS \"{nodeID}-router\" python3 Server.py router {IP_7r} {Port_server} {nodeID}\""
                 temp = temp[1:len(temp)-1:]  # quita comillas
+                temp += "\nsleep 0.2"
                 configRouter_sh.write(f"{temp}\n")
                 IDs_registers = IDs_registers + conns[counter][0]  # registra la letra del nodo
             counter = counter + 1
@@ -75,13 +77,12 @@ def createNeighborsCsv(conns):
 # Crea el archivo que correrá los nodos
 # Crea el archivo de vecinos de nuestros nodos
 def main():
-    print("\n\nRouter mapper Info:\ntopology_filename: " + topology_filename + "\nIP_7r: " + IP_7r + "\nPort_server: " + Port_server + "\n")
+    print(f"\n\nRouter mapper Info:\n\tTopology filename: {TXT_CYAN}{topology_filename}{TXT_RESET} \n\tIP_7r: {TXT_CYAN}{IP_7r}{TXT_RESET} \n\tPort_server: {TXT_CYAN}{Port_server}{TXT_RESET}")
 
     conns = getNodesInfo()
     runningNodes = createSh(conns)
-    print(len(runningNodes) , "online routers of 7raspado: " + runningNodes)
+    print(f"{TXT_GREEN}{len(runningNodes)} online routers{TXT_RESET} of 7raspado: {TXT_YELLOW}{runningNodes}{TXT_RESET}\n")
     createNeighborsCsv(conns)
-    print("neighbors are ready to read for each router")
 
 
 if __name__ == "__main__":

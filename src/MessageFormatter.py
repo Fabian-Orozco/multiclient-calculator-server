@@ -22,6 +22,26 @@ class MessageFormatter:
         return self.__sQts(key) + ":" + f"{value}" + var_comma + ""
 
     # Crea el formato de vectores
+    # @param source router que solicita resolver la operación. La respuesta se le envía a este.
+    # @param destination router al que se le envia actualmente el mensaje
+    # @param packet paquete/operación al que pertenece la operación dividida.
+    # @param order posición de la operación dividida en la operación completa.
+    # @param oper operación dividida.
+    # Example:
+    # {"type":"operation","source":"B","destination":"A","packet":x,"order": y, "operation":"2+2+4"}
+    # TODO FIX SOURCE
+    def operationToRouter(self, source, destination, packet, order, oper):
+        format = "{"
+        format += self.jsonFormat("type",           self.__sQts("operation"),   ",")
+        format += self.jsonFormat("source",         self.__sQts(""),            ",")
+        format += self.jsonFormat("destination",    self.__sQts(destination),   ",")
+        format += self.jsonFormat("packet",         self.__sQts(packet),        ",")
+        format += self.jsonFormat("order",          self.__sQts(order),         ",")
+        format += self.jsonFormat("operation",      self.__sQts(oper)         )
+        format += "}"
+        return format
+
+    # Crea el formato de vectores
     # @param routingTable: tabla de vectores del nodo
     # @param node: Símbolo del nodo
     # Example: 
