@@ -198,7 +198,7 @@ class Router:
 
 						# checks if the message is for this router
 						if (jsonMessage["destination"] == self.__routerID):
-							printMsgTime(f"Conexion con router {sockStruct.neighbordId} {TXT_RED}procesa{TXT_RESET}: {oper}")
+							printMsgTime(f"{TXT_YELLOW}[{sockStruct.neighbordId}] procesa{TXT_RESET}: {oper}")
 
 							# if not the message is put in the output queue of the thread that manages the connection with the destiny of the message 
 						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
@@ -221,8 +221,9 @@ class Router:
 							# after updating the table we send the new table to every neighbor router
 							# the router sends its table only if it was updated
 							self.__broadcastTable()
-				except:
+				except Exception as e:
 					printMsgTime(f"Connection with router {sockStruct.neighbordId} received an {TXT_RED}unknown message{TXT_RESET}: {oper}")
+					printMsgTime(f"{TXT_RED}{e}{TXT_RESET}")
 
 	# @brief Split a meesage with multiple json messages
 	# @param message that may contain multiple json messages
