@@ -187,7 +187,7 @@ class Router:
 			# splt messages is used when the received message includes mre than one operation in json format
 			# this happens when the transmitter sends several messages in a short period of time so the receiver receives all the messages in the same buffer
 			operations = self.__splitMessage(message)
-
+			jsonMessage = None
 			# cycle to process al the received messages if theres is more than one
 			for oper in operations:
 				try:
@@ -272,31 +272,40 @@ class Router:
 
 				# index of the table of with the "target" 
 				tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
-				neighborIndex =  self.__routingTable["destinyt"][table["node"]]
+				neighborIndex =  self.__routingTable["destiny"].index(table["node"])
 
 				# -1 means with can not reach that target
-				if (self.__routingTable["weights"][tableRowIndex] == -1):
+				if (self.__routingTable["weights"][tableRowIndex] == -1 and connInfo["weight"] != -1 and table["node"] != connInfo["target"]):
+					vecino = self.__routingTable["neighbord"][tableRowIndex]
+					target = self.__routingTable["destiny"][tableRowIndex]
+					peso = self.__routingTable["weights"][tableRowIndex]
+					printMsgTime(f"{TXT_GREEN}1Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 					# as we can not reach the target and the new table has this information, we save this new information
 					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
-					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
+				
+					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"] + self.__routingTable["weights"][neighborIndex]
+
+					vecino = self.__routingTable["neighbord"][tableRowIndex]
+					target = self.__routingTable["destiny"][tableRowIndex]
+					peso = self.__routingTable["weights"][tableRowIndex]
+					printMsgTime(f"{TXT_GREEN}1Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 					isUpdated = True
 
-					# if we can reach the target we check if the new information received is better than the one already saved in our table
-				elif(connInfo["weight"] != -1 and self.__routingTable["weights"][neighborIndex] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex] + self.__routingTable["weights"][neighborIndex]):
-
+				# if we can reach the target we check if the new information received is better than the one already saved in our table
+				elif(connInfo["weight"] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex] + self.__routingTable["weights"][neighborIndex]):
 					vecino = self.__routingTable["neighbord"][tableRowIndex]
 					target = self.__routingTable["destiny"][tableRowIndex]
 					peso = self.__routingTable["weights"][tableRowIndex]
-					printMsgTime(f"{TXT_RED}Actualiza:{TXT_RESET} n: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}2Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 
 					# updates the table with the new information
-					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"]
 					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
+					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"] + self.__routingTable["weights"][neighborIndex]
 
 					vecino = self.__routingTable["neighbord"][tableRowIndex]
 					target = self.__routingTable["destiny"][tableRowIndex]
 					peso = self.__routingTable["weights"][tableRowIndex]
-					printMsgTime(f"{TXT_RED}Reemplaza con:{TXT_RESET} n: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}2Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 
 					isUpdated = True
 
