@@ -1,14 +1,17 @@
+from Packager import Packager
+from Operation import Package
 KEY_TO_FRAME = 1
 CELDAS_EN_RAM = 4
 
 FRAME_SIZE = 8
-
+__VALID_SYMBOLS = {"(", ")","+", "-", "*", "/", "s", "^"}
 
 OPERATION = 0
 REFERENCE = 1
-OPERATION_PAGE = 2
-PRESENT_BIT = 3
-FRAME_RAM = 4
+COMPLETE = 2
+OPERATION_PAGE = 3
+PRESENT_BIT = 4
+FRAME_RAM = 5
 class MMU:
     
     def __init__(self):
@@ -16,6 +19,7 @@ class MMU:
         self._pagedDisk = []
         self._pagesInRam = []
         self._ram = bytearray(32)
+        self._packager = Packager()
     
     def getFrame(self, index):
         return index + KEY_TO_FRAME
@@ -25,14 +29,26 @@ class MMU:
 
     def updatePagedDisk(self, diskOperation, index):
         pageFrames = []
-        for char in range(0, len(diskOperation), FRAME_SIZE):
-            pageFrames.append(diskOperation[char:char+FRAME_SIZE])
+        op  = self._packager.run(diskOperation, 0)
+        for i in op:
+            complete = True
+            if(len(i.operation) > FRAME_SIZE):
+                complete = False
+            for char in range(0, len(i.operation), FRAME_SIZE):
+                pageFrames.append((i.operation[char:char+FRAME_SIZE], complete))
+        
+        #operation = 0
+        #for char in range(0, len(op[operation].operation), FRAME_SIZE):
+        #    pageFrames.append(op[operation].operation[char:char+FRAME_SIZE])
+        #    operation += 1
         page = {"index":index,"operation":diskOperation,"qtypags":len(pageFrames),"parts" : pageFrames}
         self._pagedDisk.append(page)
     
     def addPage(self, pageFrames):
+
         for pag in range(pageFrames["qtypags"]):
-            page = [pageFrames["index"], False, pag, False, -1]
+            complete = pageFrames["parts"][pag][1]
+            page = [pageFrames["index"], False, complete, pag, False, -1]
             self._pageTable.append(page)
     
     def saveRAM(self, operation, frame):
@@ -54,6 +70,7 @@ class MMU:
         operationPart = 0
         operation = ""
         count = 0
+        result = 0
         while(True):
             page  = self._getPage(operationPart, operationNumber)
             #Si la operacion no esta pagina se actualiza la pageTable para añadir las paginas correspondientes
@@ -75,6 +92,20 @@ class MMU:
             operationPart += 1
             count += 1
             self._pageTable[page][REFERENCE] = 1
+            sufix = ""
+            prefix = ""
+            if(self._pageTable[page][COMPLETE] == True):
+                if(operation[0] in __VALID_SYMBOLS):
+                    prefix = operation[0]
+                if(operation[len(operation)-1] in __VALID_SYMBOLS):
+                    sufix = operation[len(operation)-1]
+                operation = prefix + str(eval(operation)) + sufix
+            elif(self._getPage(operationPart+1,operationNumber)[page][COMPLETE] == True):
+                if(operation[0] in __VALID_SYMBOLS):
+                    prefix = operation[0]
+                if(operation[len(operation)-1] in __VALID_SYMBOLS):
+                    sufix = operation[len(operation)-1]
+                operation = prefix + str(eval(operation)) + sufix
             
     def _translate(self, page):
         return self._pageTable[page][4] * 8
@@ -127,7 +158,7 @@ class MMU:
 
 if(__name__ == '__main__'):
     mmu = MMU()
-    mmu.updatePagedDisk("4+2+3+4+3+43+3+3+45",0)
+    mmu.updatePagedDisk("444445+(2+3)*2",0)
     mmu.updatePagedDisk("2+3",1)
     #mmu.updatePagedDisk("2+4",1)
     #mmu.updatePagedDisk("3+22",2)

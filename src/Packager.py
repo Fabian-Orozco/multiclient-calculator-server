@@ -1,6 +1,7 @@
 from Utilities import *
 from Operation import Package
 
+
 class Packager:
     __VALID_SYMBOLS = {"(", ")","+", "-", "*", "/", "s", "^"}
     __ENDLINE = "x"      # Va al inicio de la pila, y en medio de cada operacion o numero enviado a los nodos
