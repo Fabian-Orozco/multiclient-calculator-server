@@ -265,39 +265,39 @@ class Router:
 	def __updateTable(self, vector):
 		newTable = json.loads(vector)
 		isUpdated = False
-		for target in newTable["conn"]:
-			print(target)
+		for target in newTable['conn']:
 			if (target["target"] != self.__routerID):
 				targetIndex = self.__routingTable["destiny"].index(target["target"])
 				neighborIndex = self.__routingTable["destiny"].index(newTable["node"])
-				if (self.__routingTable["weights"][targetIndex] == -1 and target["weight"] != -1):
+				if (self.__routingTable["weights"][targetIndex] == -1 and target['weight'] != -1):
+
 					vecino = self.__routingTable["neighbord"][targetIndex]
-					target = self.__routingTable["destiny"][targetIndex]
+					target_ = self.__routingTable["destiny"][targetIndex]
 					peso = self.__routingTable["weights"][targetIndex]
-					printMsgTime(f"{TXT_GREEN}1Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}1_Antes:\t{TXT_RESET} [{self.__routerID}]->[{vecino}]->[{target_}] | weight: {peso} ")
 
 					self.__routingTable["neighbord"][targetIndex] = newTable["node"]
 					self.__routingTable["weights"][targetIndex] = target["weight"] + self.__routingTable["weights"][neighborIndex]
 
 					vecino = self.__routingTable["neighbord"][targetIndex]
-					target = self.__routingTable["destiny"][targetIndex]
+					target_ = self.__routingTable["destiny"][targetIndex]
 					peso = self.__routingTable["weights"][targetIndex]
-					printMsgTime(f"{TXT_GREEN}1Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}1_Despues:\t{TXT_RESET} [{self.__routerID}]->[{vecino}]->[{target_}] | weight: {peso} ")
 					isUpdated = True
 				elif (target["weight"] != -1 and self.__routingTable["weights"][targetIndex] > target["weight"] + self.__routingTable["weights"][neighborIndex]):
 
 					vecino = self.__routingTable["neighbord"][targetIndex]
-					target = self.__routingTable["destiny"][targetIndex]
+					target_ = self.__routingTable["destiny"][targetIndex]
 					peso = self.__routingTable["weights"][targetIndex]
-					printMsgTime(f"{TXT_GREEN}2Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}2_Antes:\t{TXT_RESET} [{self.__routerID}]->[{vecino}]->[{target_}] | weight: {peso} ")
 
 					self.__routingTable["weights"][targetIndex] = target["weight"] + self.__routingTable["weights"][neighborIndex]
 					self.__routingTable["neighbord"][targetIndex] = newTable["node"]
 
 					vecino = self.__routingTable["neighbord"][targetIndex]
-					target = self.__routingTable["destiny"][targetIndex]
+					target_ = self.__routingTable["destiny"][targetIndex]
 					peso = self.__routingTable["weights"][targetIndex]
-					printMsgTime(f"{TXT_GREEN}2Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
+					printMsgTime(f"{TXT_GREEN}2_Después:\t{TXT_RESET} [{self.__routerID}]->[{vecino}]->[{target_}] | weight: {peso} ")
 					isUpdated = True
 
 
