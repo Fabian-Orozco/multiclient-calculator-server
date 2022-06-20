@@ -263,51 +263,43 @@ class Router:
 	# @brief Compares the table with the new table to update our table
 	# @param message that contains the vector snet by another router
 	def __updateTable(self, vector):
-		table = json.loads(vector)
+		newTable = json.loads(vector)
 		isUpdated = False
-		for connInfo in table["conn"]:
-			# we ignore the connection with this router
-			# our table does not need to include a connection to the same router
-			if (connInfo["target"] != self.__routerID):
-
-				# index of the table of with the "target" 
-				tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
-				neighborIndex =  self.__routingTable["destiny"].index(table["node"])
-
-				# -1 means with can not reach that target
-				if (self.__routingTable["weights"][tableRowIndex] == -1 and connInfo["weight"] != -1 and table["node"] != connInfo["target"]):
-					vecino = self.__routingTable["neighbord"][tableRowIndex]
-					target = self.__routingTable["destiny"][tableRowIndex]
-					peso = self.__routingTable["weights"][tableRowIndex]
+		for target in newTable["conn"]:
+			print(target)
+			if (target["target"] != self.__routerID):
+				targetIndex = self.__routingTable["destiny"].index(target["target"])
+				neighborIndex = self.__routingTable["destiny"].index(newTable["node"])
+				if (self.__routingTable["weights"][targetIndex] == -1 and target["weight"] != -1):
+					vecino = self.__routingTable["neighbord"][targetIndex]
+					target = self.__routingTable["destiny"][targetIndex]
+					peso = self.__routingTable["weights"][targetIndex]
 					printMsgTime(f"{TXT_GREEN}1Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
-					# as we can not reach the target and the new table has this information, we save this new information
-					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
-				
-					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"] + self.__routingTable["weights"][neighborIndex]
 
-					vecino = self.__routingTable["neighbord"][tableRowIndex]
-					target = self.__routingTable["destiny"][tableRowIndex]
-					peso = self.__routingTable["weights"][tableRowIndex]
+					self.__routingTable["neighbord"][targetIndex] = newTable["node"]
+					self.__routingTable["weights"][targetIndex] = target["weight"] + self.__routingTable["weights"][neighborIndex]
+
+					vecino = self.__routingTable["neighbord"][targetIndex]
+					target = self.__routingTable["destiny"][targetIndex]
+					peso = self.__routingTable["weights"][targetIndex]
 					printMsgTime(f"{TXT_GREEN}1Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 					isUpdated = True
+				elif (target["weight"] != -1 and self.__routingTable["weights"][targetIndex] > target["weight"] + self.__routingTable["weights"][neighborIndex]):
 
-				# if we can reach the target we check if the new information received is better than the one already saved in our table
-				elif(connInfo["weight"] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex] + self.__routingTable["weights"][neighborIndex]):
-					vecino = self.__routingTable["neighbord"][tableRowIndex]
-					target = self.__routingTable["destiny"][tableRowIndex]
-					peso = self.__routingTable["weights"][tableRowIndex]
+					vecino = self.__routingTable["neighbord"][targetIndex]
+					target = self.__routingTable["destiny"][targetIndex]
+					peso = self.__routingTable["weights"][targetIndex]
 					printMsgTime(f"{TXT_GREEN}2Actual:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
 
-					# updates the table with the new information
-					self.__routingTable["neighbord"][tableRowIndex] = table["node"]
-					self.__routingTable["weights"][tableRowIndex] = connInfo["weight"] + self.__routingTable["weights"][neighborIndex]
+					self.__routingTable["weights"][targetIndex] = target["weight"] + self.__routingTable["weights"][neighborIndex]
+					self.__routingTable["neighbord"][targetIndex] = newTable["node"]
 
-					vecino = self.__routingTable["neighbord"][tableRowIndex]
-					target = self.__routingTable["destiny"][tableRowIndex]
-					peso = self.__routingTable["weights"][tableRowIndex]
+					vecino = self.__routingTable["neighbord"][targetIndex]
+					target = self.__routingTable["destiny"][targetIndex]
+					peso = self.__routingTable["weights"][targetIndex]
 					printMsgTime(f"{TXT_GREEN}2Nuevo:{TXT_RESET} vecino: {vecino} target: {target} weight: {peso} ")
-
 					isUpdated = True
+
 
 		# returns boolean indicating if the table was updated with new and better information or not
 		return isUpdated
