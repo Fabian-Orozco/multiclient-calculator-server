@@ -272,6 +272,7 @@ class Router:
 
 				# index of the table of with the "target" 
 				tableRowIndex = self.__routingTable["destiny"].index(connInfo["target"])
+				neighborIndex =  self.__routingTable["destinyt"][table["node"]]
 
 				# -1 means with can not reach that target
 				if (self.__routingTable["weights"][tableRowIndex] == -1):
@@ -281,7 +282,8 @@ class Router:
 					isUpdated = True
 
 					# if we can reach the target we check if the new information received is better than the one already saved in our table
-				elif(connInfo["weight"] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex]):
+				elif(connInfo["weight"] != -1 and self.__routingTable["weights"][neighborIndex] != -1 and connInfo["weight"] < self.__routingTable["weights"][tableRowIndex] + self.__routingTable["weights"][neighborIndex]):
+
 					vecino = self.__routingTable["neighbord"][tableRowIndex]
 					target = self.__routingTable["destiny"][tableRowIndex]
 					peso = self.__routingTable["weights"][tableRowIndex]
