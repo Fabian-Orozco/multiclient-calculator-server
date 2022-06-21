@@ -2,6 +2,8 @@ import random
 import socket
 import threading
 import os
+
+from sklearn import neighbors
 from Utilities import *
 import json
 from MessageFormatter import MessageFormatter
@@ -198,7 +200,7 @@ class Router:
 
 						# checks if the message is for this router
 						if (jsonMessage["destination"] == self.__routerID):
-							printMsgTime(f"{TXT_YELLOW}[{sockStruct.neighbordId}] procesa{TXT_RESET}: {oper}")
+							printMsgTime(f"{TXT_YELLOW}[{self.__routerID}] processing{TXT_RESET}: {oper}")
 
 							# if not the message is put in the output queue of the thread that manages the connection with the destiny of the message 
 						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
@@ -207,12 +209,15 @@ class Router:
 
 							if (self.__routingTable["neighbord"][tableIndex] != "-"):
 								# if the destiny is in our table we put it in the respective output queue
-								self.__connections[self.__routingTable["neighbord"][tableIndex]].outQueue.put(oper)
+								neighborToResend = self.__routingTable["neighbord"][tableIndex]
+								self.__connections[neighborToResend].outQueue.put(oper)
+								printMsgTime(f"{TXT_YELLOW}[{self.__routerID}] 1resending to {neighborToResend}{TXT_RESET}: {oper}")
 							else:
 								# if we can't get to the destiny, the message is put randomly in a output queue
 								# the next router will be responsible of resending to the correct destiny
 								randomConnect = random.randint(1, len(self.__connections))
 								self.__connections[randomConnect].outQueue.put(oper)
+								printMsgTime(f"{TXT_YELLOW}[{self.__routerID}] 2resending to {self.__connections[randomConnect].neighbordId}{TXT_RESET}: {oper}")
 
 						# checking if the message is a vector
 					elif ((jsonMessage["type"] == "vector")):
@@ -222,8 +227,7 @@ class Router:
 							# the router sends its table only if it was updated
 							self.__broadcastTable()
 				except Exception as e:
-					printMsgTime(f"Connection with router {sockStruct.neighbordId} received an {TXT_RED}unknown message{TXT_RESET}: {oper}")
-					printMsgTime(f"{TXT_RED}{e}{TXT_RESET}")
+					printMsgTime(f"{TXT_YELLOW}[{self.__routerID}]{TXT_RESET} received an {TXT_RED}unknown message ({e}){TXT_RESET}: {oper}")
 
 	# @brief Split a meesage with multiple json messages
 	# @param message that may contain multiple json messages
