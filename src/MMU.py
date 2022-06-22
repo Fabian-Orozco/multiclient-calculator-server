@@ -104,7 +104,7 @@ class MMU:
             if(self._pageTable[page][PRESENT_BIT] == False):
                 err = self.runPagination(page, operation, False)
                 if(err == -1):
-                    return -1
+                    return 
                 operation = ""
             #Translates to know the real position of the data in RAM
             frame = self._translate(page)
@@ -120,7 +120,7 @@ class MMU:
             else:
                 err = self.runPagination(self._getPage(self._pageTable[page][OPERATION_PAGE]+1, self._pageTable[page][0]),operation, True)
                 if(err == -1):
-                    return -1
+                    return 
                 operation = ""
                 #Concatenates the new parts in RAM
                 frame = self._translate(page)
@@ -169,7 +169,9 @@ class MMU:
                     if(self._pageTable[i][REFERENCE] == True and self._pageTable[i][PRESENT_BIT] == True):
                         #if the garbage bit is in true save in the disk the data in RAM
                         if(self._pageTable[i][GARVAGE] == True and operation != ""):
-                            self.saveInPagedDisk(operation, page)
+                            err = self.saveInPagedDisk(operation, page)
+                            if(err == -1):
+                                return -1
                             operation = ""
                         #Puts the Present bit in the old page in False
                         self._pageTable[i][PRESENT_BIT] = False
@@ -277,7 +279,7 @@ class MMU:
 if(__name__ == '__main__'):
     mmu = MMU()
     mmu.updatePagedDisk("sqrt(25)+(2+3)*2+4^10+2+123313123",0)
-    mmu.updatePagedDisk("+23+3241*2+4^10-5000",1)
+    mmu.updatePagedDisk("23+3241*2+4^10-5000",1)
     mmu.updatePagedDisk("23+1-10+5+2*2",2)
     mmu.updatePagedDisk("3231231212134312321234-121323",3) 
     #mmu.updatePagedDisk("2+3+",3)
