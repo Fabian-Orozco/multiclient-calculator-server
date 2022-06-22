@@ -3,7 +3,6 @@ import socket
 import threading
 import os
 
-from sklearn import neighbors
 from Utilities import *
 import json
 from MessageFormatter import MessageFormatter
@@ -11,8 +10,6 @@ import queue
 import sys
 from time import sleep
 import csv
-
-
 
 class Router:
 	def __init__(self, serverIp, serverPort, id):
