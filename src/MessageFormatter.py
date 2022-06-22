@@ -29,15 +29,14 @@ class MessageFormatter:
     # @param oper operación dividida.
     # Example:
     # {"type":"operation","source":"B","destination":"A","packet":x,"order": y, "operation":"2+2+4"}
-    # TODO FIX SOURCE
     def operationToRouter(self, source, destination, packet, order, oper):
         format = "{"
         format += self.jsonFormat("type",           self.__sQts("operation"),   ",")
-        format += self.jsonFormat("source",         self.__sQts(""),            ",")
+        format += self.jsonFormat("source",         self.__sQts(source),        ",")
         format += self.jsonFormat("destination",    self.__sQts(destination),   ",")
-        format += self.jsonFormat("packet",         self.__sQts(packet),        ",")
-        format += self.jsonFormat("order",          self.__sQts(order),         ",")
-        format += self.jsonFormat("operation",      self.__sQts(oper)         )
+        format += self.jsonFormat("packet",         packet,                     ",")
+        format += self.jsonFormat("order",          order,                      ",")
+        format += self.jsonFormat("operation",      self.__sQts(oper)              )
         format += "}"
         return format
 
