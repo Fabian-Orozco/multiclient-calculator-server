@@ -102,7 +102,9 @@ class MMU:
                 return operation
             #If page is not in RAM run the pagination
             if(self._pageTable[page][PRESENT_BIT] == False):
-                self.runPagination(page, operation, False)
+                err = self.runPagination(page, operation, False)
+                if(err == -1):
+                    return -1
                 operation = ""
             #Translates to know the real position of the data in RAM
             frame = self._translate(page)
@@ -116,7 +118,9 @@ class MMU:
                 self._pageTable[page][GARVAGE] = True
             #If all part of an operation are not in RAM, page the parts
             else:
-                self.runPagination(self._getPage(self._pageTable[page][OPERATION_PAGE]+1, self._pageTable[page][0]),operation, True)
+                err = self.runPagination(self._getPage(self._pageTable[page][OPERATION_PAGE]+1, self._pageTable[page][0]),operation, True)
+                if(err == -1):
+                    return -1
                 operation = ""
                 #Concatenates the new parts in RAM
                 frame = self._translate(page)
@@ -195,8 +199,12 @@ class MMU:
         #evaluates the operatios
         if(prefix in VALID_SYMBOLS):
             operation = prefix + str(round(eval(operation.replace("^","**"), names),2))
+            if(len(operation) > FRAME_SIZE*3):
+                return -1
         else:
             operation = str(round(eval(operation.replace("^","**"), names),2))
+            if(len(operation) > FRAME_SIZE*3):
+                return -1
         complete = True
         if(len(operation) > FRAME_SIZE):
             complete = False
@@ -271,7 +279,7 @@ if(__name__ == '__main__'):
     mmu.updatePagedDisk("sqrt(25)+(2+3)*2+4^10+2+123313123",0)
     mmu.updatePagedDisk("+23+3241*2+4^10-5000",1)
     mmu.updatePagedDisk("23+1-10+5+2*2",2)
-    mmu.updatePagedDisk("323123121+213234341232-121323",3) 
+    mmu.updatePagedDisk("3231231212134312321234-121323",3) 
     #mmu.updatePagedDisk("2+3+",3)
     #mmu.addPage(mmu._pagedDisk[0])
     #print(mmu._pagedDisk)
