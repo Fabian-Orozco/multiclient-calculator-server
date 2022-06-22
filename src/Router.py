@@ -1,3 +1,4 @@
+from decimal import Clamped
 import random
 import socket
 import threading
@@ -10,6 +11,7 @@ import queue
 import sys
 from time import sleep
 import csv
+from Calculator import Calculator
 
 class Router:
 	def __init__(self, serverIp, serverPort, id):
@@ -39,6 +41,10 @@ class Router:
 
 		# message format
 		self.__formatter = MessageFormatter()
+
+		# file to store the results 
+		self.resultsFile = "results" + self.__routerID + ".txt"
+		self.lock = threading.lock()
 
 	# @brief Loads the name of the availables nodes of the network
 	# @details reads the topology file to load only the name of all the nodes
@@ -114,6 +120,7 @@ class Router:
 	# @param sockStruct is an class that can send, receive from/to a router
 	def __runConnection(self, sockStruct):
 		printMsgTime(f"Conection with {sockStruct.neighbordId} {TXT_GREEN}established{TXT_RESET}")
+		calc = Calculator()
 		while(True):
 
 			sockStruct.bind()
@@ -135,7 +142,7 @@ class Router:
 				newSockStruct.close()
 
 			# process mesages includes calculating and putting if the corresponding queue to resend if necessary
-			stopCondition = self.__processMessages(sockStruct)
+			stopCondition = self.__processMessages(sockStruct, calc)
 
 			# condition to kill the threads
 			if (stopCondition == "threadStop"):
@@ -174,7 +181,7 @@ class Router:
 	# @brief Process the messages in the input queue
 	# @deatails includes the process of resending and calculating
 	# @param sockStruct porigfinal socket used to manage the connection. This includes the input queue and output queue
-	def __processMessages(self, sockStruct):
+	def __processMessages(self, sockStruct, calc):
 		# process messages until the input queue is empty
 		while (not sockStruct.inQueue.empty()):
 			message = sockStruct.inQueue.get(block=False)
@@ -197,7 +204,20 @@ class Router:
 
 						# checks if the message is for this router
 						if (jsonMessage["destination"] == self.__routerID):
+							# operation evaluation section
 							printMsgTime(f"{TXT_YELLOW}[{self.__routerID}] processing{TXT_RESET}: {oper}")
+							try:
+								result = calc.calculate(jsonMessage["packet"], jsonMessage["operation"], jsonMessage["order"])
+							except:
+								result = "Error"
+							if (result == -1):
+								result = "Error"
+
+							with self.lock:
+								# open file for appending
+								with open(self.resultsFile, 'a') as file:
+									# write text to data
+									file.write(jsonMessage["operation"] + " = " + result)
 
 							# if not the message is put in the output queue of the thread that manages the connection with the destiny of the message 
 						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
