@@ -1,6 +1,5 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
-from sqlite3 import enable_shared_cache
 from Utilities import *
 import random
 from time import sleep
@@ -54,7 +53,7 @@ class Dispatcher:
 
 		for operation in list:
 			# params: source , destination, packet, order, operation
-			msg = self.__formatter.operationToRouter(0, self.__allNodesIDs[destination], 0, 0, operation.operation)
+			msg = self.__formatter.operationToRouter(self.__mainNode, self.__allNodesIDs[destination], operation.id, operation.part, operation.operation)
 			while(True):
 				try:
 					# intenta hacer send a un router aleatorio, lo recibirá solo si está en receive.

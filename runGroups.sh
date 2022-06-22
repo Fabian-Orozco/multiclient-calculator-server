@@ -2,7 +2,6 @@
 # Para la demostración entre grupos.
 
 cd src
-# [cantidad de nodos] [IP]
 screen -dmS "Server" python3 Server.py server $1 $2
 sleep 0.3 # delay
 
