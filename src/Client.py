@@ -1,6 +1,5 @@
 # UCR/ECCI/PI_redesOper Equipo 7 raspado.
 
-from operator import truediv
 from time import sleep
 from Utilities import *
 from Args_analizer import Args_analizer
