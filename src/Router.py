@@ -1,8 +1,10 @@
-from decimal import Clamped
 import random
+from shutil import ExecError
 import socket
 import threading
 import os
+
+from requests import JSONDecodeError
 
 from Utilities import *
 import json
@@ -44,7 +46,7 @@ class Router:
 
 		# file to store the results 
 		self.resultsFile = "results" + self.__routerID + ".txt"
-		self.lock = threading.lock()
+		self.lock = threading.Lock()
 
 	# @brief Loads the name of the availables nodes of the network
 	# @details reads the topology file to load only the name of all the nodes
@@ -71,13 +73,14 @@ class Router:
 	# @param sockStruct is an class that can send, receive from/to a router
 	def __runConnectionToServer(self, sockStruct):
 		printMsgTime(f"Conection with {sockStruct.neighbordId} {TXT_GREEN}established{TXT_RESET}")
+		calc = Calculator()
 		while(True):
 			try:
 				# receiving operations (parts)
 				self.__receiveOperations(sockStruct, sockStruct)
 
 				# porcessing operations includes resending or calculating
-				stopCondition = self.__processMessages(sockStruct)
+				stopCondition = self.__processMessages(sockStruct, calc)
 				if (stopCondition == "threadStop"):
 					return
 			except KeyboardInterrupt:
@@ -208,16 +211,17 @@ class Router:
 							printMsgTime(f"{TXT_YELLOW}[{self.__routerID}] processing{TXT_RESET}: {oper}")
 							try:
 								result = calc.calculate(jsonMessage["packet"], jsonMessage["operation"], jsonMessage["order"])
-							except:
+							except Exception as e:
+								printErrors(f"Could not {TXT_RED}calculate{TXT_RESET}" + jsonMessage["operation"])
 								result = "Error"
-							if (result == -1):
+							if (result == None):
 								result = "Error"
 
 							with self.lock:
 								# open file for appending
 								with open(self.resultsFile, 'a') as file:
 									# write text to data
-									file.write(jsonMessage["operation"] + " = " + result)
+									file.write(jsonMessage["operation"] + " = " + str(result) + "\n")
 
 							# if not the message is put in the output queue of the thread that manages the connection with the destiny of the message 
 						elif (jsonMessage["destination"] in self.__routingTable["destiny"]):
@@ -243,7 +247,7 @@ class Router:
 							# after updating the table we send the new table to every neighbor router
 							# the router sends its table only if it was updated
 							self.__broadcastTable()
-				except Exception as e:
+				except JSONDecodeError as e:
 					printMsgTime(f"{TXT_YELLOW}[{self.__routerID}]{TXT_RESET} received an {TXT_RED}unknown message ({e}){TXT_RESET}: {oper}")
 
 	# @brief Split a meesage with multiple json messages
