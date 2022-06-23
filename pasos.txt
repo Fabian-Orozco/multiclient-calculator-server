@@ -3,3 +3,7 @@ python3 ./src/config_generate.py [nodos] [IP] [IP] > ./src/topologia.csv
 
 2. correr runGroups
 ./runGroups.sh [ServerIP] [ServerPort]
+
+
+python3 ./src/config_generate.py 4 127.0.0.1 > ./src/topologia.csv
+./runGroups.sh 127.0.0.1 8080
