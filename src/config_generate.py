@@ -4,7 +4,6 @@
 import sys
 import networkx as nx
 import random
-import matplotlib.pyplot as plt
 from itertools import combinations, groupby
 
 # Redirect output to csv file:
@@ -65,11 +64,3 @@ if __name__ == "__main__":
         if node != edges[-1]:
             print()
         port = port + 20
-    
-    """ pos = nx.spring_layout(G, seed=7)
-    nx.draw_networkx_nodes(G, pos, node_size=500)
-    nx.draw_networkx_edges(G, pos)
-    nx.draw_networkx_labels(G, pos)
-    edge_labels = nx.get_edge_attributes(G, "weight")
-    nx.draw_networkx_edge_labels(G, pos, edge_labels)
-    plt.show() """
