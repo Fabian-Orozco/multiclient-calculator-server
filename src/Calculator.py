@@ -14,4 +14,5 @@ class Calculator:
         self.mmu.updatePagedDisk(self.saver.getElement(self.count)[operation])
         operation = self.mmu.getOperation(self.count)
         self.count += 1
+        return operation
 
