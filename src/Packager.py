@@ -35,8 +35,7 @@ class Packager:
         # -5
         if ((index - 1) < 0):
             index += 1
-            while string[index].isnumeric():
-            #while string[index] in self.NUMBERS:        # recorre el string hasta que se termine el numero
+            while string[index].isnumeric():        # recorre el string hasta que se termine el numero
                 answer = answer + string[index]
                 index += 1
             index -= 1
@@ -44,8 +43,7 @@ class Packager:
         elif ((index - 1) >= 0):
             if (string[index - 1] == "("):
                 index += 1
-                while string[index].isnumeric():
-                #while string[index] in self.NUMBERS:    # recorre el string hasta que se termine el numero
+                while string[index].isnumeric():    # recorre el string hasta que se termine el numero
                     answer = answer + string[index]
                     index += 1
                 index -= 1
@@ -100,7 +98,6 @@ class Packager:
         operatorStack = []      # Pila donde almacenamos los operadores
         suffixOperation = []    # Lista donde vamos almacenando la operacion sufija
         inputSpaced = self.__insertSpaces(operation)        # Inserta espacios entre caracteres
-        # print(f"Operacion: {operation}")   
 
         entries = inputSpaced.split() # Lista con las entradas de la operacion (operacion dividida)
         for entry in entries:
@@ -183,7 +180,11 @@ class Packager:
 
         return stack
 
-
+    ## empaqueta las operaciones divididas, en una lista de objetos tipo Operation que puedan ser enviados a los routers
+    #  
+    #  @listing pila con las operaciones divididas
+    #  @id identificador de la operacion completa
+    #  @return lista con los paquetes de operaciones
     def __package(self, listing, id):
         packages = []
 
@@ -191,7 +192,7 @@ class Packager:
         part = 0
 
         while index < len(listing):
-            if listing[index] != "x":
+            if listing[index] != "x":   # Es igual a self.ENDLINE
                 package = Package(listing[index], id, part)
                 packages.append(package)
                 part += 1
@@ -199,9 +200,13 @@ class Packager:
 
         return packages
 
+    ## funcion principal para ejecutar el funcionamiento del programa
+    #  en este se divide la operacion y se mete en una pila, de la pila se saca para crear los paquetes
+    #  @param operation el string con la operacion a dividir
+    #  @param id identificador de la operacion
+    #  @return lista con los paquetes a enviar
     def run(self, operation, id):
         listing = self.__split(operation)
-        # print(f"Lista: {listing}")
         packages = self.__package(listing, id)
 
         return packages
