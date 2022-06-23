@@ -244,7 +244,7 @@ class Router:
 							# after updating the table we send the new table to every neighbor router
 							# the router sends its table only if it was updated
 							self.__broadcastTable()
-				except JSONDecodeError as e:
+				except json.decoder.JSONDecodeError as e:
 					printMsgTime(f"{TXT_YELLOW}[{self.__routerID}]{TXT_RESET} received an {TXT_RED}unknown message ({e}){TXT_RESET}: {oper}")
 
 	# @brief Split a meesage with multiple json messages
