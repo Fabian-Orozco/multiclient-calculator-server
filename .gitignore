@@ -4,7 +4,6 @@ neighbors.csv
 config.csv
 topologia.csv
 topology.csv
-testing.py
 
 # Byte-compiled / optimized / DLL files
 *.csv
