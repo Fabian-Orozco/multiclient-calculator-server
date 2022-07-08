@@ -1,11 +1,4 @@
-from audioop import add
-from ctypes import addressof
-from http import client
-from operator import truediv
 import socket
-
-
-
 
 def main():
   print("Hello world")
@@ -14,9 +7,12 @@ def main():
   sock.bind(("127.0.0.1", 8080))
 
   sock.listen()
-  file = open('./http/login.html')
+  file = open('./html/request.html')
   content = file.read()
-  response = 'HTTP/1.0 200 OK\n\n' + content
+  okResponse = 'HTTP/1.0 200 OK\n\n'
+  errorResponse = 'HTTP/1.1 404 Not Found\n\n'
+  notParsedResponse =  'HTTP/1.1 400 Bad request\n\n'
+  response = okResponse + content
   
   while True:
     client, address = sock.accept()
