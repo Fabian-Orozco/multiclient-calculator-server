@@ -1,4 +1,3 @@
-from posixpath import split
 import socket
 
 from HttpHandler import HttpHandler
@@ -12,30 +11,27 @@ def main():
 
   sock.listen()
   okResponse = 'HTTP/1.0 200 OK\n\n'
-  errorResponse = 'HTTP/1.1 404 Not Found\n\n'
-  notParsedResponse =  'HTTP/1.1 400 Bad request\n\n'
+  notFound = 'HTTP/1.1 404 Not Found\n\n'
+  badRequest =  'HTTP/1.1 400 Bad request\n\n'
   content = ""
   while True:
     client, address = sock.accept()
     print(f"Connected to {address}")
     request = client.recv(1024).decode("UTF-8")
     print(f"Received form {address}:\n[ {request} ]")
-    requestType = httpHand.detectHttpType(request)
+    (requestType, action) = httpHand.handleHttpRequest(request)
     print(f"\nDetected type is:  {requestType}")
-    if (requestType != "noHTTP"):
-      print(f"\HTML request is:  {httpHand.getHttpRequest(request)}")
+    print(f"\Action todo is:  {action}")
 
-    if ("/login" in request):
-      file = open('./html/result.html')
-      content = file.read()
-      response = okResponse + content
-      file.close()
-    else:
-      file = open('./html/login.html')
-      content = file.read()
-      response = okResponse + content
-      file.close()
+    response = ""
+    if (requestType == "GET"):
+      response = httpHand.generateResponse("ok", action, "")
+    elif (requestType == "POST"):
+      response = httpHand.generateResponse("ok", "request", "")
     client.sendall(response.encode("UTF-8"))
+
+
+
     client.close()
   
   sock.close()
