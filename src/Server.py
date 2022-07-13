@@ -1,15 +1,28 @@
 import socket
 import threading
 import os
+from urllib import response
 from Utilities import *
 from Authenticator import Authenticator
 import json
 from MessageFormatter import MessageFormatter
 import queue
-from Dispatcher import Dispatcher
 import sys
 from time import sleep
 from Router import Router
+from HttpHandler import HttpHandler
+
+
+NOHTTP = "noHTTP"
+POST = "POST"
+GET = "GET"
+BAD_REQUEST = "badRequest"
+NOT_FOUND = "notFound"
+OK_CODE = "ok"
+LOGIN_ACTION = "login"
+REQUEST = "request"
+NO_WRITE_ACCESS_1 = "<input type=\"radio\" name=\"operationType\" id=\"option-1\" value=\"write\" required>"
+NO_WRITE_ACCESS_2 = "<label for=\"option-1\">Escritura</label><br>"
 
 class Server:
 	def __init__(self, host, port):
@@ -24,7 +37,8 @@ class Server:
 		self.__welcomingSocket.bind((self.__serverHost, self.__serverPort))
 		self.__requestsQueue = queue.Queue()                                                 # server requests queue
 		self.__authenticator = Authenticator()                                               # server creates a authenticator to checks client credentials
-		self.__dispatcher = Dispatcher() 				# dispatcher that sends operations to routers
+		self.httpHandler = HttpHandler()
+		# self.__dispatcher = Dispatcher() 				# dispatcher that sends operations to routers
 		#=========================================================================================#
 
 		# threads list to be able to join them before closing
@@ -90,26 +104,91 @@ class Server:
 		connectionType = self.__recvMsg(sock, 20)
 		if (connectionType == "timeout"):
 			return
-		jsonMessage = json.loads(connectionType)
 
-		if (jsonMessage["type"] ==  "login"):
-			# thread runs as a manager for client connections
-			self.__handleClientConnection(sock, address, connectionType)
-		elif (jsonMessage["type"] ==  "router"):
-			# thread runs as a manager for routers connections
-			self.handleRouterConnection(sock, address, connectionType)
-			
+		(httpConnection, httpAction) = self.httpHandler.handleHttpRequest(connectionType)
 
-	# @brief Method to handle a router connection 
-	# @details works as a consumer thread that consumes requests from the server queue and calls the dispatcher
-	# @param sock socket used to communicate with the router
-	# @param address ip and port form the client/router
-	# @param message is the first message received form the router
-	def handleRouterConnection(self, sock, address, message):
-		routerInfo = json.loads(message)
-		routerID = routerInfo["id"]
-		printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Router {routerID} | ip:{address[0]} | port:{address[1]}")
-		self.__dispatcher.updateRoutersAvailables(sock, routerID)
+		if (httpConnection == NOHTTP):
+			# manages client connections through terminal
+			jsonMessage = json.loads(connectionType)
+			if (jsonMessage["type"] ==  "login"):
+				# thread runs as a manager for client connections
+				self.__handleClientConnection(sock, address, connectionType)
+			else:
+				return
+		else:
+			# manages client through http
+			self.handleHttpConnection(httpConnection, httpAction, sock, connectionType)
+
+		# elif (jsonMessage["type"] ==  "router"):
+		# 	# thread runs as a manager for routers connections
+		# 	self.handleRouterConnection(sock, address, connectionType)
+
+	def handleHttpConnection(self, httpConnection : str, httpAction : str, client : socket.socket, httpRequest : str):
+		printMsgTime(f"{TXT_YELLOW}Es HTTP la conexion{TXT_RESET}")
+		response = ""
+		if (httpConnection == "GET"):
+			# http request method GET
+			# for the request html and login html
+			response = self.httpHandler.generateResponse(OK_CODE, httpAction, "")
+		elif (httpConnection == "POST"):
+			# http request method POST
+			# to process login credentials and operations
+			response = self.handleHttpPost(httpAction, httpRequest)
+			# response = self.httpHandler.generateResponse(OK_CODE, BAD_REQUEST, "")
+		else:
+			# http request method not supported
+			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"Este Servidor no soporta pedidos de tipo: {httpConnection}", "Tipo de pedido http no soportado")
+
+		client.sendall(response.encode("UTF-8"))
+
+	def handleHttpPost(self, httpAction : str, httpRequest : str) -> str:
+		response = ""
+		printMsgTime(f"{TXT_CYAN} Evaluando que post hacer {TXT_RESET}")
+		if (httpAction == LOGIN_ACTION):
+				response = self.httpLogin(httpRequest)
+		return response
+
+	def httpLogin(self, httpRequest : str) -> str:
+		response = ""
+		printMsgTime(f"{TXT_CYAN} Es login credenciales {TXT_RESET}")
+		credentials = self.httpHandler.getContent(httpRequest)
+		credentials = self.httpHandler.parseText(credentials)
+		(user, password) = self.httpHandler.getCredentials(credentials)
+		printMsgTime(f"{TXT_CYAN}credenciales: {TXT_RESET}{credentials}")
+		print(user, "  ",  password)
+		
+		userAccepted = self.__authenticator.checkLog(user, password)
+		print(userAccepted)
+		
+		if (userAccepted):
+			response = self.httpHandler.generateResponse(OK_CODE, REQUEST, "", f"Bienvenido {user}")
+			# checks if user can write
+			if (self.__authenticator.userCanWrite() == False):
+				response = response.replace(NO_WRITE_ACCESS_1, "")
+				response = response.replace(NO_WRITE_ACCESS_2, "")
+				print(response)
+		else:
+			response = self.httpHandler.generateResponse(OK_CODE, LOGIN_ACTION, "Usuairo o contrase&ntildea incorrecta")
+
+		return response
+
+
+
+	def calcularResultados(self, operacion : str) -> str:
+		# call math class
+		printMsgTime(f"{TXT_CYAN} Calculando {TXT_RESET}")
+
+
+	# # @brief Method to handle a router connection 
+	# # @details works as a consumer thread that consumes requests from the server queue and calls the dispatcher
+	# # @param sock socket used to communicate with the router
+	# # @param address ip and port form the client/router
+	# # @param message is the first message received form the router
+	# def handleRouterConnection(self, sock, address, message):
+	# 	routerInfo = json.loads(message)
+	# 	routerID = routerInfo["id"]
+	# 	printMsgTime(f"{TXT_GREEN}Connection established.{TXT_RESET} Router {routerID} | ip:{address[0]} | port:{address[1]}")
+	# 	self.__dispatcher.updateRoutersAvailables(sock, routerID)
 
 	# @brief Method to handle a client connection 
 	# @details receives operation requests form the cliente and push them into the requests queue of the server \
@@ -163,7 +242,7 @@ class Server:
 		# keeps receiving if it doesn't receive en disconnection request
 		while(jsonMessage["type"] != "disconnect"):
 			# puts in queue the received message
-			self.__requestsQueue.put(messageReceived)
+			# self.__requestsQueue.put(messageReceived)
 
 			# receives request message from client with a 5 minutes timeout
 			messageReceived = self.__recvMsg(communicator, self.__maxTimeOut)
@@ -238,45 +317,45 @@ class Server:
 		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 		sock.send(message.encode('UTF-8'))
 
-	# @brief Method to consume from the requests queue
-	# @param dispatcher object that divides the requests a sends them to the router network
-	def __consumeRequests(self):
-		request = ""
-		while (True):
-			# Get the next data to consume, or block while queue is empty
-			request = self.__requestsQueue.get(block = True, timeout = None)
+	# # @brief Method to consume from the requests queue
+	# # @param dispatcher object that divides the requests a sends them to the router network
+	# def __consumeRequests(self):
+	# 	request = ""
+	# 	while (True):
+	# 		# Get the next data to consume, or block while queue is empty
+	# 		request = self.__requestsQueue.get(block = True, timeout = None)
 
-			if (request  == "stop"):
-				break
+	# 		if (request  == "stop"):
+	# 			break
 
-			# carga json para ver el tipo de request
-			type = json.loads(request)
-			if type["request"] != "read":
-				# dispatcher will be called in this section
-				self.__dispatcher.dispatch(request)
-			else: # TODO ETAPA 4
-				printMsgTime(f"The {TXT_RED}read request{TXT_RESET} is not dispatched. {TXT_CYAN}Under construction.{TXT_RESET}")
+	# 		# carga json para ver el tipo de request
+	# 		type = json.loads(request)
+	# 		if type["request"] != "read":
+	# 			# dispatcher will be called in this section
+	# 			self.__dispatcher.dispatch(request)
+	# 		else: # TODO ETAPA 4
+	# 			printMsgTime(f"The {TXT_RED}read request{TXT_RESET} is not dispatched. {TXT_CYAN}Under construction.{TXT_RESET}")
 			
-		self.__dispatcher.shutDown()
+	# 	self.__dispatcher.shutDown()
 
 	# @brief method to run the server
 	def run(self):
 		printMsgTime(f"{TXT_GREEN}|======: Server started :======|{TXT_RESET}")
 		printMsgTime(f"{TXT_YELLOW}Binded to ip: {self.__serverHost} | port: {self.__serverPort}{TXT_RESET}")
-		self.__consume()
+		# self.__consume()
 		self.__waitForConnection()
 
-	# @brief consumes from the request queue to dispatch to the routers
-	def __consume(self):
-		# creates thread to dispatch requests
-		thread = threading.Thread(target = self.__consumeRequests)
-		self.__threadsArray.append(thread)
+	# # @brief consumes from the request queue to dispatch to the routers
+	# def __consume(self):
+	# 	# creates thread to dispatch requests
+	# 	thread = threading.Thread(target = self.__consumeRequests)
+	# 	self.__threadsArray.append(thread)
 
-		# deamon thread so it destroys itself when it has finished working
-		thread.daemon = True
+	# 	# deamon thread so it destroys itself when it has finished working
+	# 	thread.daemon = True
 
-		# thread starts to work
-		thread.start()
+	# 	# thread starts to work
+	# 	thread.start()
 
 
 if(__name__ == '__main__'):
