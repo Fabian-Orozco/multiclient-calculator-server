@@ -82,7 +82,7 @@ class HttpHandler:
     return response
 
   def getContent(self, httpRequest : str) -> str:
-    return httpRequest[httpRequest.rfind("\n"):]
+    return self.parseText(httpRequest[httpRequest.rfind("\n"):])
 
   def parseText(self, text : str) -> str:
     checkOperands = list(self.operands.keys())
@@ -90,7 +90,7 @@ class HttpHandler:
       text = text.replace(httpOperand, self.operands[httpOperand])
     return text
 
-  def getCredentials(self, content : str) -> str:
+  def getContentTuple(self, content : str) -> str:
     user = content[content.find("=")+1:content.find("&")]
     user = user.strip(" \n\t")
     password = content[content.rfind("=")+1:]
