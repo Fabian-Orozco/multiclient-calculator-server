@@ -23,6 +23,9 @@ LOGIN_ACTION = "login"
 REQUEST = "request"
 NO_WRITE_ACCESS_1 = "<input type=\"radio\" name=\"operationType\" id=\"option-1\" value=\"write\" required>"
 NO_WRITE_ACCESS_2 = "<label for=\"option-1\">Escritura</label><br>"
+OPERATION_REQUEST = "operation"
+OPERATION_WRITE = "write"
+OPERATION_READ = "read"
 
 class Server:
 	def __init__(self, host, port):
@@ -143,17 +146,19 @@ class Server:
 
 	def handleHttpPost(self, httpAction : str, httpRequest : str) -> str:
 		response = ""
-		printMsgTime(f"{TXT_CYAN} Evaluando que post hacer {TXT_RESET}")
+		printMsgTime(f"{TXT_RED} Evaluando que post hacer {TXT_RESET}")
 		if (httpAction == LOGIN_ACTION):
 				response = self.httpLogin(httpRequest)
+		elif (httpAction == OPERATION_REQUEST):
+			response = self.httpOperation(httpRequest)
+
 		return response
 
 	def httpLogin(self, httpRequest : str) -> str:
 		response = ""
 		printMsgTime(f"{TXT_CYAN} Es login credenciales {TXT_RESET}")
 		credentials = self.httpHandler.getContent(httpRequest)
-		credentials = self.httpHandler.parseText(credentials)
-		(user, password) = self.httpHandler.getCredentials(credentials)
+		(user, password) = self.httpHandler.getContentTuple(credentials)
 		printMsgTime(f"{TXT_CYAN}credenciales: {TXT_RESET}{credentials}")
 		print(user, "  ",  password)
 		
@@ -172,11 +177,31 @@ class Server:
 
 		return response
 
+	def httpOperation(self, httpRequest : str) -> str:
+		response = ""
+		mssContent = self.httpHandler.getContent(httpRequest)
+		(operation, operationType) = self.httpHandler.getContentTuple(mssContent)
+		printMsgTime(f"{TXT_RED} Calculando: {TXT_RESET} {operation}|{operationType}")
+
+		if (operationType == OPERATION_READ):
+			result = self.searchResult(operation)
+		elif (operationType == OPERATION_WRITE):
+			result = self.calculateOperation(operation)
+		else:
+			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"No se pudo procesar la siguiente solicitud: {operationType}::{operation}", "Solicitud no procesable")
 
 
-	def calcularResultados(self, operacion : str) -> str:
+		return response
+
+
+
+	def calculateOperation(self, operation : str) -> str:
 		# call math class
-		printMsgTime(f"{TXT_CYAN} Calculando {TXT_RESET}")
+		printMsgTime(f"{TXT_CYAN} Calculando {TXT_RESET} {operation}")
+
+	def searchResult(self, operation : str )-> str:
+		printMsgTime(f"{TXT_CYAN} Searching {TXT_RESET} {operation}")
+
 
 
 	# # @brief Method to handle a router connection 
