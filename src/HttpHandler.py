@@ -2,10 +2,12 @@ GET = "GET"
 POST = "POST"
 HTTP = "HTTP"
 PATH = "html/"
+NOHTTP = "noHTTP"
+
 class HttpHandler:
 
   def __init__(self):
-    self.operands = {"*":"%2A", "+":"%2B", "(":"%28", ")":"%29", "/":"%2F"}
+    self.operands = {"%2A":"*", "%2B":"+", "%28":"(", "%29":")", "%2F":"/"}
     self.htmlFiles = {"notFound":"notFound.html", "login":"login.html", "badRequest":"badRequest.html", "result":"result.html", "request":"request.html"}
     self.httpCodes = {"ok":"HTTP/1.0 200 OK\n\n", "badRequest":"HTTP/1.1 400 Bad request\n\n", "notFound":"HTTP/1.1 404 Not Found\n\n"}
 
@@ -13,13 +15,10 @@ class HttpHandler:
   def __detectHttpType(self, httpRequest: str) -> str:
     splitMessage = httpRequest.split("/")
     print("tamanyo del split: ", len(splitMessage))
-    if (len(splitMessage) <= 1 or HTTP not in splitMessage[1].strip()):
-      result = "noHTTP"
+    if (splitMessage != None and len(splitMessage) <= 1  or HTTP not in splitMessage[1].strip()):
+      result = NOHTTP
     else:
-      if (GET in splitMessage[0].strip()):
-        result = GET
-      elif (POST in splitMessage[0].strip()):
-        result = POST
+      result = splitMessage[0].strip()
     return result
 
   def __getHttpRequest(self, httpRequest: str) -> str:
@@ -46,8 +45,8 @@ class HttpHandler:
 
   def handleHttpRequest(self, httpRequest : str) -> str:
     requestType = self.__detectHttpType(httpRequest)
-    if (requestType == "noHttp"):
-      return ("noHttp", "noHttp")
+    if (requestType == NOHTTP):
+      return (NOHTTP, NOHTTP)
     
     if (requestType == "GET"):
       return (requestType, self.__getHttpRequest(httpRequest))
@@ -82,3 +81,19 @@ class HttpHandler:
 
     return response
 
+  def getContent(self, httpRequest : str) -> str:
+    return httpRequest[httpRequest.rfind("\n"):]
+
+  def parseText(self, text : str) -> str:
+    checkOperands = list(self.operands.keys())
+    for httpOperand in checkOperands:
+      text = text.replace(httpOperand, self.operands[httpOperand])
+    return text
+
+  def getCredentials(self, content : str) -> str:
+    user = content[content.find("=")+1:content.find("&")]
+    user = user.strip(" \n\t")
+    password = content[content.rfind("=")+1:]
+    password = password.strip(" \n\t")
+
+    return (user, password)
