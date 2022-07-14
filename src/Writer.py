@@ -32,13 +32,17 @@ def addOperation(newOperation : str, result : str):
             results.write(fie_str)
 
 def getOperation(operation : str):
-    resultsFile = open(route, "r")
+    try:
+        resultsFile = open(route, "r")
+    except:
+        return (False, operation)
+
     results_json= json.load(resultsFile)
     for operation_json in results_json["operations"]:
         if (operation_json["operation"] == operation):
             return (True, operation_json["result"])
-
     return (False, operation)
+
 
 # test code. To run: python Writter.py
 if __name__ == "__main__":
