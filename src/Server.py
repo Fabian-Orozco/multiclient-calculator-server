@@ -1,7 +1,8 @@
+from operator import truediv
 import socket
 import threading
 import os
-from urllib import response
+from urllib import request
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -11,6 +12,8 @@ import sys
 from time import sleep
 from Router import Router
 from HttpHandler import HttpHandler
+import Math
+import Writer
 
 
 NOHTTP = "noHTTP"
@@ -26,6 +29,8 @@ NO_WRITE_ACCESS_2 = "<label for=\"option-1\">Escritura</label><br>"
 OPERATION_REQUEST = "operation"
 OPERATION_WRITE = "write"
 OPERATION_READ = "read"
+RESULT_HTML = "result"
+READ_ONLY = "operationReadOnly"
 
 class Server:
 	def __init__(self, host, port):
@@ -81,8 +86,6 @@ class Server:
 
 					# server accepts the connection
 					newSocket, address = self.__welcomingSocket.accept()
-					printMsgTime(f"{TXT_YELLOW}Connecting to ip:{address[0]} | port:{address[1]}{TXT_RESET}")
-
 					# creates thread to manage the connection
 					# the thread receives the socket of the new connection
 					thread = threading.Thread(target = self.__detectConnectionType, args = (newSocket, address))
@@ -103,7 +106,8 @@ class Server:
 	# @details method to determine if the threads has to run as a client manager or server manager
 	# @param sock new socket where the connection is moved to after handshake
 	# @param address ip and port form the client/router
-	def __detectConnectionType(self, sock, address):
+	def __detectConnectionType(self, sock : socket.socket, address):
+		printMsgTime(f"{TXT_YELLOW}Connecting to ip:{address[0]} | port:{address[1]}{TXT_RESET}")
 		connectionType = self.__recvMsg(sock, 20)
 		if (connectionType == "timeout"):
 			return
@@ -121,23 +125,22 @@ class Server:
 		else:
 			# manages client through http
 			self.handleHttpConnection(httpConnection, httpAction, sock, connectionType)
-
+		sock.close()
 		# elif (jsonMessage["type"] ==  "router"):
 		# 	# thread runs as a manager for routers connections
 		# 	self.handleRouterConnection(sock, address, connectionType)
 
 	def handleHttpConnection(self, httpConnection : str, httpAction : str, client : socket.socket, httpRequest : str):
-		printMsgTime(f"{TXT_YELLOW}Es HTTP la conexion{TXT_RESET}")
+
 		response = ""
 		if (httpConnection == "GET"):
 			# http request method GET
 			# for the request html and login html
-			response = self.httpHandler.generateResponse(OK_CODE, httpAction, "")
+			response = self.httpHandler.generateResponse(OK_CODE, httpAction, "", "")
 		elif (httpConnection == "POST"):
 			# http request method POST
 			# to process login credentials and operations
 			response = self.handleHttpPost(httpAction, httpRequest)
-			# response = self.httpHandler.generateResponse(OK_CODE, BAD_REQUEST, "")
 		else:
 			# http request method not supported
 			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"Este Servidor no soporta pedidos de tipo: {httpConnection}", "Tipo de pedido http no soportado")
@@ -146,62 +149,75 @@ class Server:
 
 	def handleHttpPost(self, httpAction : str, httpRequest : str) -> str:
 		response = ""
-		printMsgTime(f"{TXT_RED} Evaluando que post hacer {TXT_RESET}")
 		if (httpAction == LOGIN_ACTION):
 				response = self.httpLogin(httpRequest)
 		elif (httpAction == OPERATION_REQUEST):
 			response = self.httpOperation(httpRequest)
-
+		elif (httpAction == READ_ONLY):
+			response = self.httpOperation(httpRequest, False)
+		else:
+			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"Este Servidor no soporta pedidos de tipo: {httpAction}", "Tipo de pedido http no soportado")
+			response = response.replace("request", "login")
 		return response
 
 	def httpLogin(self, httpRequest : str) -> str:
 		response = ""
-		printMsgTime(f"{TXT_CYAN} Es login credenciales {TXT_RESET}")
 		credentials = self.httpHandler.getContent(httpRequest)
 		(user, password) = self.httpHandler.getContentTuple(credentials)
-		printMsgTime(f"{TXT_CYAN}credenciales: {TXT_RESET}{credentials}")
-		print(user, "  ",  password)
 		
 		userAccepted = self.__authenticator.checkLog(user, password)
-		print(userAccepted)
 		
 		if (userAccepted):
 			response = self.httpHandler.generateResponse(OK_CODE, REQUEST, "", f"Bienvenido {user}")
 			# checks if user can write
 			if (self.__authenticator.userCanWrite() == False):
-				response = response.replace(NO_WRITE_ACCESS_1, "")
-				response = response.replace(NO_WRITE_ACCESS_2, "")
-				print(response)
+				response = self.httpHandler.generateResponse(OK_CODE, READ_ONLY, "", f"Bienvenido {user}")
+			printMsgTime(f"User \"{user}\" {TXT_GREEN}accepted{TXT_RESET}")
 		else:
-			response = self.httpHandler.generateResponse(OK_CODE, LOGIN_ACTION, "Usuairo o contrase&ntildea incorrecta")
-
+			response = self.httpHandler.generateResponse(OK_CODE, LOGIN_ACTION, "Usuario o contrase&ntildea incorrecta")
+			printMsgTime(f"User \"{user}\" {TXT_RED}not accepted{TXT_RESET}")
 		return response
 
-	def httpOperation(self, httpRequest : str) -> str:
+	def httpOperation(self, httpRequest : str, writePermission : bool = True) -> str:
 		response = ""
 		mssContent = self.httpHandler.getContent(httpRequest)
 		(operation, operationType) = self.httpHandler.getContentTuple(mssContent)
-		printMsgTime(f"{TXT_RED} Calculando: {TXT_RESET} {operation}|{operationType}")
 
 		if (operationType == OPERATION_READ):
 			result = self.searchResult(operation)
+			if (result[0] == True):
+				response = self.httpHandler.generateResponse(OK_CODE, RESULT_HTML, f"{operation} = {result[1]}")
+			else:
+				response = self.httpHandler.generateResponse(NOT_FOUND, NOT_FOUND, f"No se econtr&oacute la operaci&oacuten: {operation}", "Operaci&oacuten no encontrada")
 		elif (operationType == OPERATION_WRITE):
 			result = self.calculateOperation(operation)
+			if (result[0] == True):
+				response = self.httpHandler.generateResponse(OK_CODE, RESULT_HTML, f"{operation} = {result[1]}")
+			else:
+				response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"{operation} = Formato de operaci&oacuten inv&aacutelido", "Operaci&oacuten inv&aacutelida")
+
 		else:
 			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"No se pudo procesar la siguiente solicitud: {operationType}::{operation}", "Solicitud no procesable")
-
+		if (writePermission == False):
+			response =response.replace("request", READ_ONLY)
 
 		return response
 
-
-
-	def calculateOperation(self, operation : str) -> str:
+	def calculateOperation(self, operation : str):
 		# call math class
-		printMsgTime(f"{TXT_CYAN} Calculando {TXT_RESET} {operation}")
+		result = Writer.getOperation(operation)
+		if (result[0]):
+			return result
+		
+		result = Math.calculateOperation(operation)
+		if (result[0]):
+			Writer.addOperation(operation, result[1])
+		return result
 
 	def searchResult(self, operation : str )-> str:
-		printMsgTime(f"{TXT_CYAN} Searching {TXT_RESET} {operation}")
-
+		response = ""
+		result = Writer.getOperation(operation)
+		return result
 
 
 	# # @brief Method to handle a router connection 
