@@ -8,13 +8,12 @@ class HttpHandler:
 
   def __init__(self):
     self.operands = {"%2A":"*", "%2B":"+", "%28":"(", "%29":")", "%2F":"/"}
-    self.htmlFiles = {"notFound":"notFound.html", "login":"login.html", "badRequest":"badRequest.html", "result":"result.html", "request":"request.html"}
+    self.htmlFiles = {"notFound":"notFound.html", "login":"login.html", "badRequest":"badRequest.html", "result":"result.html", "request":"request.html", "operationReadOnly":"readOnly.html"}
     self.httpCodes = {"ok":"HTTP/1.0 200 OK\n\n", "badRequest":"HTTP/1.1 400 Bad request\n\n", "notFound":"HTTP/1.1 404 Not Found\n\n"}
 
 
   def __detectHttpType(self, httpRequest: str) -> str:
     splitMessage = httpRequest.split("/")
-    print("tamanyo del split: ", len(splitMessage))
     if (splitMessage != None and len(splitMessage) <= 1  or HTTP not in splitMessage[1].strip()):
       result = NOHTTP
     else:
