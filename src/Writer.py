@@ -1,8 +1,6 @@
 import json
 route = "./json/results.json"
 
-# @param newOperation ejemplo: 
-# "{\"index\": 1, \"operation\": \"2+2\", \"result\": \"4\"}"
 def addOperation(newOperation : str, result : str):
     newOperation = f"{{\"operation\": \"{newOperation}\", \"result\": {result}}}"
 
