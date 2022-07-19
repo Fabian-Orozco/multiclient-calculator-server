@@ -1,8 +1,12 @@
+from datetime import datetime
+from Utilities import *
+
 GET = "GET"
 POST = "POST"
 HTTP = "HTTP"
 PATH = "html/"
 NOHTTP = "noHTTP"
+LOG_FILE = "bitacora/ServerLog.txt"
 
 class HttpHandler:
 
@@ -46,12 +50,15 @@ class HttpHandler:
     requestType = self.__detectHttpType(httpRequest)
     if (requestType == NOHTTP):
       return (NOHTTP, NOHTTP)
-    
     if (requestType == "GET"):
-      return (requestType, self.__getHttpRequest(httpRequest))
+      getRequest = self.__getHttpRequest(httpRequest)
+      self.addTolog(httpRequest, getRequest)
+      return (requestType, getRequest)
 
     if (requestType == "POST"):
-      return (requestType, self.__postHttpRequest(httpRequest))
+      postRequest = self.__postHttpRequest(httpRequest)
+      self.addTolog(httpRequest, postRequest)
+      return (requestType, postRequest)
 
 
 
@@ -96,3 +103,36 @@ class HttpHandler:
     password = password.strip(" \n\t")
 
     return (user, password)
+
+  def addTolog(self, httpMessage : str, contentType : str):
+    result = "Content type: " + self.__detectHttpType(httpMessage) + " " + contentType + ", "
+    result += "Content length: " + self.__getLength(httpMessage) + ", "
+    time = datetime.now().strftime('%x - %X') + ", "
+    result += "Date: " + time + ", "
+    result += "Host: " + self.__getHost(httpMessage) + ", "
+    result += "Content: " + self.getContent(httpMessage).strip(" \n")
+
+    try:
+      file = open(LOG_FILE, "a")
+      printMsgTime(f"{TXT_GREEN}Added to log:{TXT_RESET} {result}")
+      result += "\n\n"
+      file.write(result)
+    except:
+      printErrors(f"Could not open log file '{LOG_FILE}'")
+
+  def __getLength(self, httpMessage : str) -> str:
+    length = httpMessage[httpMessage.find("Content-Length:")+15: ]
+    if (length):
+      length = length[:length.find("\r\n")]
+      if (not length):
+        length = "0"
+    length = length.strip()
+    return length
+
+
+  def __getHost(self, httpMessage : str) -> str:
+    host = httpMessage[httpMessage.find("Host:")+5: ]
+    if (host):
+      host = host[:host.find("\r\n")]
+      host = host.strip()
+    return host
