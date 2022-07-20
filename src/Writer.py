@@ -1,6 +1,10 @@
 import json
 route = "./json/results.json"
 
+
+# @brief method to store a operation and its result in a file
+# @param newOperation string with the operation
+# @param result string with the result of the operation
 def addOperation(newOperation : str, result : str):
     newOperation = f"{{\"operation\": \"{newOperation}\", \"result\": {result}}}"
 
@@ -29,6 +33,10 @@ def addOperation(newOperation : str, result : str):
         with open(route, "w") as results:
             results.write(fie_str)
 
+
+# @brief method to search a operation stored in the result file
+# @param newOperation string with the operation
+# @return tuple with boolean to indicate if it was found, and the operatio if found 
 def getOperation(operation : str):
     try:
         resultsFile = open(route, "r")

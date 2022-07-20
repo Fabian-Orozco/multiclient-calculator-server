@@ -130,6 +130,13 @@ class Server:
 		# 	# thread runs as a manager for routers connections
 		# 	self.handleRouterConnection(sock, address, connectionType)
 
+
+	'''Etapa 4 '''
+	# @brief Method to process http connections
+	# @param httpConnection detects if the message is post or get
+	# @param httpAction detects if message is login, operation or other
+	# @param client socket to communicate with the client
+	# @param httpRequest message received from the client
 	def handleHttpConnection(self, httpConnection : str, httpAction : str, client : socket.socket, httpRequest : str):
 
 		response = ""
@@ -147,6 +154,11 @@ class Server:
 
 		client.sendall(response.encode("UTF-8"))
 
+	'''Etapa 4 '''
+	# @brief Method to handle post operations
+	# @param httpAction detects if message is login, operation or other
+	# @param httpRequest message received from the client
+	# @return string message with html to answer the request from the client
 	def handleHttpPost(self, httpAction : str, httpRequest : str) -> str:
 		response = ""
 		if (httpAction == LOGIN_ACTION):
@@ -160,66 +172,107 @@ class Server:
 			response = response.replace("request", "login")
 		return response
 
+	'''Etapa 4 '''
+	# @brief Method to handle a login operation
+	# @param httpRequest message received from the client
+	# @return string message with html to answer the request from the client
 	def httpLogin(self, httpRequest : str) -> str:
 		response = ""
+		# gets content from http message
 		credentials = self.httpHandler.getContent(httpRequest)
+
+		# get credentials form http message
 		(user, password) = self.httpHandler.getContentTuple(credentials)
 		
+		# checks if the credentials are correct
 		userAccepted = self.__authenticator.checkLog(user, password)
 		
 		if (userAccepted):
+			# if correct credentials we generate html that manages read and write operations
 			response = self.httpHandler.generateResponse(OK_CODE, REQUEST, "", f"Bienvenido {user}")
 			# checks if user can write
 			if (self.__authenticator.userCanWrite() == False):
+				# if the client can't wirtewe generate html that manages read operations
 				response = self.httpHandler.generateResponse(OK_CODE, READ_ONLY, "", f"Bienvenido {user}")
 			printMsgTime(f"User \"{user}\" {TXT_GREEN}accepted{TXT_RESET}")
 		else:
+			# if the user wasn't accepted qwe resend login html son he can try login in again 
 			response = self.httpHandler.generateResponse(OK_CODE, LOGIN_ACTION, "Usuario o contrase&ntildea incorrecta")
 			printMsgTime(f"User \"{user}\" {TXT_RED}not accepted{TXT_RESET}")
 		return response
 
+	'''Etapa 4 '''
+	# @brief Method to handle a operation
+	# @param httpRequest message received from the client
+	# @param writePermission indicates if the client has write rights
+	# @return string message with html to answer the request from the client
 	def httpOperation(self, httpRequest : str, writePermission : bool = True) -> str:
 		response = ""
+		# gets content of http message
 		mssContent = self.httpHandler.getContent(httpRequest)
+
+		# gets the operation and type (read or write)
 		(operation, operationType) = self.httpHandler.getContentTuple(mssContent)
 
 		if (operationType == OPERATION_READ):
+			# if the operation is a read operation, we search in the resutls file
 			result = self.searchResult(operation)
 			if (result[0] == True):
+				# if found we generate html with the response
 				response = self.httpHandler.generateResponse(OK_CODE, RESULT_HTML, f"{operation} = {result[1]}")
 			else:
+				# else we send html with 404 error message
 				response = self.httpHandler.generateResponse(NOT_FOUND, NOT_FOUND, f"No se econtr&oacute la operaci&oacuten: {operation}", "Operaci&oacuten no encontrada")
 		elif (operationType == OPERATION_WRITE):
+				# if it is a write operation we calculate it
 			result = self.calculateOperation(operation)
 			if (result[0] == True):
+				# if succesfully calculated we generate html with the response
 				response = self.httpHandler.generateResponse(OK_CODE, RESULT_HTML, f"{operation} = {result[1]}")
 			else:
+				# else we generate html with 400 error code
 				response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"{operation} = Formato de operaci&oacuten inv&aacutelido", "Operaci&oacuten inv&aacutelida")
 
 		else:
+			# if the type of operation isn't detected we send a 400 error html
 			response = self.httpHandler.generateResponse(BAD_REQUEST, BAD_REQUEST, f"No se pudo procesar la siguiente solicitud: {operationType}::{operation}", "Solicitud no procesable")
 		if (writePermission == False):
 			response =response.replace("request", READ_ONLY)
 
 		return response
 
+	'''Etapa 4 '''
+
+	# @brief calculates mathematical operations
+	# @param operation string with operation to calculate
+	# @return string with the result
 	def calculateOperation(self, operation : str):
 		# call math class
+
+		# searches if the result is already in our results file
 		result = Writer.getOperation(operation)
 		if (result[0]):
 			return result
 		
+		# if not, we have to calculate it
+
 		result = Math.calculateOperation(operation)
 		if (result[0]):
+			# if it was succesfully calculated
 			Writer.addOperation(operation, result[1])
 		return result
 
+	'''Etapa 4 '''
+
+	# @brief Method to search the result of a operation previously calculated
+	# @param operation string with operation to search
+	# @return string with the result
 	def searchResult(self, operation : str )-> str:
 		response = ""
 		result = Writer.getOperation(operation)
 		return result
 
-
+	'''Etapa 3 '''
 	# # @brief Method to handle a router connection 
 	# # @details works as a consumer thread that consumes requests from the server queue and calls the dispatcher
 	# # @param sock socket used to communicate with the router
@@ -358,6 +411,7 @@ class Server:
 		printMsgTime(f"{TXT_RED}Testing{TXT_RESET} sent: {message}")
 		sock.send(message.encode('UTF-8'))
 
+	'''Etapa 3 '''
 	# # @brief Method to consume from the requests queue
 	# # @param dispatcher object that divides the requests a sends them to the router network
 	# def __consumeRequests(self):
@@ -386,6 +440,7 @@ class Server:
 		# self.__consume()
 		self.__waitForConnection()
 
+	'''Etapa 3 '''
 	# # @brief consumes from the request queue to dispatch to the routers
 	# def __consume(self):
 	# 	# creates thread to dispatch requests
