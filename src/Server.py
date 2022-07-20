@@ -1,8 +1,6 @@
-from operator import truediv
 import socket
 import threading
 import os
-from urllib import request
 from Utilities import *
 from Authenticator import Authenticator
 import json
@@ -10,7 +8,6 @@ from MessageFormatter import MessageFormatter
 import queue
 import sys
 from time import sleep
-from Router import Router
 from HttpHandler import HttpHandler
 import Math
 import Writer
@@ -482,9 +479,4 @@ if(__name__ == '__main__'):
 	if (runmode == "server"):
 		server = Server(serverHost, serverPort)
 		server.run()
-	elif (runmode == "router"):
-		if (routerID == "-"): 
-			printErrors("The router id was not specified")
-			exit(0)
-		node = Router(serverHost, serverPort, routerID)
-		node.run()
+
