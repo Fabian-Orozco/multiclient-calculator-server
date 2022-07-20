@@ -31,6 +31,7 @@ OPERATION_WRITE = "write"
 OPERATION_READ = "read"
 RESULT_HTML = "result"
 READ_ONLY = "operationReadOnly"
+NOT_AUTHORIZED = "notLogin"
 
 class Server:
 	def __init__(self, host, port):
@@ -109,7 +110,7 @@ class Server:
 	def __detectConnectionType(self, sock : socket.socket, address):
 		printMsgTime(f"{TXT_YELLOW}Connecting to ip:{address[0]} | port:{address[1]}{TXT_RESET}")
 		connectionType = self.__recvMsg(sock, 20)
-		if (connectionType == "timeout"):
+		if (connectionType == "timeout" or not connectionType):
 			return
 
 		(httpConnection, httpAction) = self.httpHandler.handleHttpRequest(connectionType)
@@ -197,7 +198,7 @@ class Server:
 			printMsgTime(f"User \"{user}\" {TXT_GREEN}accepted{TXT_RESET}")
 		else:
 			# if the user wasn't accepted qwe resend login html son he can try login in again 
-			response = self.httpHandler.generateResponse(OK_CODE, LOGIN_ACTION, "Usuario o contrase&ntildea incorrecta")
+			response = self.httpHandler.generateResponse(NOT_AUTHORIZED, LOGIN_ACTION, "Usuario o contrase&ntildea incorrecta")
 			printMsgTime(f"User \"{user}\" {TXT_RED}not accepted{TXT_RESET}")
 		return response
 

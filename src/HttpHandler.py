@@ -18,7 +18,7 @@ class HttpHandler:
     self.htmlFiles = {"notFound":"notFound.html", "login":"login.html", "badRequest":"badRequest.html", "result":"result.html", "request":"request.html", "operationReadOnly":"readOnly.html"}
 
     # http error codes
-    self.httpCodes = {"ok":"HTTP/1.0 200 OK\n\n", "badRequest":"HTTP/1.1 400 Bad request\n\n", "notFound":"HTTP/1.1 404 Not Found\n\n"}
+    self.httpCodes = {"ok":"HTTP/1.0 200 OK\n\n", "badRequest":"HTTP/1.1 400 Bad request\n\n", "notFound":"HTTP/1.1 404 Not Found\n\n", "notLogin":"HTTP/1.1 401 Unauthorizedn\n\n"}
 
 
   # @brief method to detects if POST or GET or no http
