@@ -6,7 +6,7 @@ POST = "POST"
 HTTP = "HTTP"
 PATH = "html/"
 NOHTTP = "noHTTP"
-LOG_FILE = "bitacora/ServerLog.txt"
+LOG_FILE = "bitacora/ServerLog.log"
 
 class HttpHandler:
 
